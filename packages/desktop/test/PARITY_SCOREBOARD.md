@@ -32,7 +32,9 @@ is marked as an *expected failure* so the test suites stay GREEN.
 
 ## Scoreboard
 
-> **Gaps remaining: 15 / 15.** All entries are xfail (failing as expected).
+> **Gaps remaining: 12 / 15.** PG5, PG6, PG9 closed in the
+> @muyajs/core clipboard parity PR (engine side); PG5's OS-clipboard delivery
+> and PG9's desktop `copyAsRich` menu map remain (the latter is wave 2).
 
 | Gap | Severity | Behaviour lost | Test location(s) | Mechanism | Status |
 |-----|----------|----------------|------------------|-----------|--------|
@@ -40,11 +42,11 @@ is marked as an *expected failure* so the test suites stay GREEN.
 | **PG2** | major | source-mode → WYSIWYG caret not restored (`handleFileChange` drops `muyaIndexCursor`) | `packages/desktop/test/e2e/parity-source-undo-saved.spec.ts` (`PG2:`) | `test.fail()` | ❌ xfail |
 | **PG3** | major | `autoCheck` preference not consumed (task-list checkbox cascade lost) | `packages/muya/src/block/gfm/taskListCheckbox/__tests__/parityAutoCheck.spec.ts` (`PG3:` ×2) | `it.fails` | ❌ xfail |
 | **PG4** | major | drag-drop image insertion (local file + web link) absent | `packages/desktop/test/PARITY_QA.md` § PG4 | manual-QA | ❌ xfail |
-| **PG5** | major | binary/bitmap clipboard image paste lost (screenshot, browser "Copy Image") | `packages/muya/src/clipboard/__tests__/parityImagePaste.spec.ts` (`PG5:`) · `packages/desktop/test/PARITY_QA.md` § PG5 | `it.fails` + manual-QA | ❌ xfail |
-| **PG6** | major | pasted image FILE bypasses `imageAction` (copy-to-assets / upload preference ignored) | `packages/muya/src/clipboard/__tests__/parityImagePaste.spec.ts` (`PG6:` ×2) | `it.fails` | ❌ xfail |
+| **PG5** | major | binary/bitmap clipboard image paste lost (screenshot, browser "Copy Image") | `packages/muya/src/clipboard/__tests__/parityImagePaste.spec.ts` (`PG5:`) · `packages/desktop/test/PARITY_QA.md` § PG5 | passing `it` + manual-QA | ✅ engine fixed (OS-clipboard manual-QA remains) |
+| **PG6** | major | pasted image FILE bypasses `imageAction` (copy-to-assets / upload preference ignored) | `packages/muya/src/clipboard/__tests__/parityImagePaste.spec.ts` (`PG6:` ×2) | passing `it` | ✅ fixed |
 | **PG7** | major | export loads core CSS from CDN instead of inlining it (unstyled offline) | `packages/muya/src/state/__tests__/parityExportHtml.spec.ts` (`PG7:` ×2) | `it.fails` | ❌ xfail |
 | **PG8** | major | exported headings carry no `id` (dead TOC / `[TOC]` anchors) | `packages/muya/src/state/__tests__/parityExportHtml.spec.ts` (`PG8:` ×2) | `it.fails` | ❌ xfail |
-| **PG9** | major | "Copy as Rich Text" pastes HTML *source* not rich text (no `copyAsRich` path) | `packages/muya/src/clipboard/__tests__/parityCopyAsRich.spec.ts` (`PG9:` ×2) | `it.fails` | ❌ xfail |
+| **PG9** | major | "Copy as Rich Text" pastes HTML *source* not rich text (no `copyAsRich` path) | `packages/muya/src/clipboard/__tests__/parityCopyAsRich.spec.ts` (`PG9:` ×2) | passing `it` | ✅ engine fixed (desktop `copyAsRich` map = wave 2) |
 | **PG10** | minor | `preview-image` never emitted — select-image + Space full-screen preview lost | `packages/muya/src/selection/__tests__/parityPreviewImage.spec.ts` (`PG10:` ×2) | `it.fails` | ❌ xfail |
 | **PG11** | minor | `heading-copy-link` never emitted — hover-to-copy-anchor affordance gone | `packages/muya/src/__tests__/parityHeadingCopyLink.spec.ts` (`PG11:` ×2) | `it.fails` | ❌ xfail |
 | **PG12** | minor | `hideLinkPopup` preference not consumed — link hover popover not gated | `packages/muya/src/editor/__tests__/parityHideLinkPopup.spec.ts` (`PG12:`) | `it.fails` (+ control) | ❌ xfail |
