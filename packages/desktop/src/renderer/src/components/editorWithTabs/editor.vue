@@ -271,14 +271,24 @@ let scrollHandler: ((e: Event) => void) | null = null
 // the desktop store's `tab.history` (which drives the save/dirty tracking and
 // is migrated separately). We therefore keep the real engine history in a
 // per-tab map here for restoration across in-session tab switches, and feed the
-// store a SYNTHETIC desktop-shaped history whose entry id changes on every edit
-// so the store's `isSaved` logic keeps flipping correctly.
+// store a SYNTHETIC desktop-shaped history.
+//
+// The synthetic entry id is the engine undo-stack DEPTH — a stable position
+// marker, NOT an ever-incrementing counter. The store records the save-time id
+// as `lastSavedHistoryId` and clears the dirty indicator whenever the current
+// id matches it again. Using the undo-stack depth means undoing back to the
+// on-disk content returns the id to its saved value, so the saved/clean
+// indicator is restored (parity with the legacy history-index behaviour). An
+// ever-incrementing counter never matched again after an undo, leaving the tab
+// permanently dirty even when its content matched disk.
 const engineHistoryByTab = new Map<string, unknown>()
-let editSeq = 0
-const makeSyntheticHistory = (): IFileHistoryLike => {
-  editSeq += 1
+const engineUndoDepth = (history: unknown): number => {
+  const stack = (history as { stack?: { undo?: unknown[] } } | null)?.stack
+  return Array.isArray(stack?.undo) ? stack.undo.length : 0
+}
+const makeSyntheticHistory = (engineHistory: unknown): IFileHistoryLike => {
   return {
-    stack: [{ id: editSeq }],
+    stack: [{ id: engineUndoDepth(engineHistory) }],
     index: 0,
     lastEditIndex: 0,
     lastInitIndex: -1
@@ -297,38 +307,83 @@ interface SelectionFormatLike {
   [key: string]: unknown
 }
 
-// The engine's `selection-change` payload is keyed by `anchor`/`focus` +
-// `anchorPath`/`focusPath` and carries live block refs. The desktop's
-// application-menu state builder (`createApplicationMenuState`) was written
-// against the legacy `{ start, end, affiliation }` shape, so adapt it. Only
-// `start`/`end` (key + offset + the active content block) are derivable from
-// the new payload; the rich block `affiliation` chain is not surfaced by the
-// engine yet, so it degrades to empty (block-context menu toggles like
-// list/table awareness are a documented gap — format toggles still work via
-// `formats`).
+// Container `blockName` → legacy `functionType`. The engine's affiliation
+// entries carry `blockName` but not the legacy `functionType` the desktop
+// menu-state builder keys off for `pre`/`figure` containers (table detection +
+// Format-menu disable). Re-derive it here so `createApplicationMenuState`'s
+// existing `pre`/`figure` branches fire. The `code$` / `multiplemath` /
+// `frontmatter` / `html` / `table` values match the legacy muyajs vocabulary
+// (`createApplicationMenuState`'s `/frontmatter|html|multiplemath|code$/` test
+// and `=== 'table'` check).
+const CONTAINER_FUNCTION_TYPE: Record<string, string> = {
+  'code-block': 'fencecode',
+  frontmatter: 'frontmatter',
+  table: 'table',
+  'html-block': 'html',
+  'math-block': 'multiplemath'
+}
+
+interface EngineAffiliationEntry {
+  type: string
+  blockName: string
+  listType?: string
+  listItemType?: string
+  isLooseListItem?: boolean
+  [key: string]: unknown
+}
+
+// The engine's `selection-change` payload (since #4410) carries an
+// `affiliation` chain (shared-ancestor paragraph-type blocks, outermost-first)
+// plus per-endpoint `anchorBlockInfo`/`focusBlockInfo` describing the content
+// leaf (`type: 'span'` + `functionType`), alongside the live `anchorBlock`/
+// `focusBlock` refs (which carry `.text`). The desktop's application-menu state
+// builder (`createApplicationMenuState`) and the selected-text derivation in
+// `SELECTION_CHANGE` were written against the legacy `{ start, end, affiliation }`
+// shape, so map the new payload onto it:
+//   - `start.type`/`end.type` from the leaf info (`'span'`) so the
+//     `start.type === 'span'` guards fire,
+//   - `start.block.functionType`/`end.block.functionType` from the leaf info so
+//     code-content / table-cell detection lights up,
+//   - `start.block.text`/`end.block.text` from the live block so the store can
+//     still slice the selected text (`SELECTION_CHANGE` → search prefill),
+//   - `affiliation` straight through (entries already carry `type` +
+//     `listType`/`listItemType`/`isLooseListItem`), surfacing a derived
+//     `functionType` on `pre`/`figure` containers for table / code-fence keys.
 const adaptSelectionChange = (changes: MuyaChange) => {
   const anchorPath = (changes.anchorPath ?? []) as Array<string | number>
   const focusPath = (changes.focusPath ?? anchorPath) as Array<string | number>
-  const anchorBlock = changes.anchorBlock as
-    | { text?: string; functionType?: string }
+  const anchorBlock = changes.anchorBlock as { text?: string } | null | undefined
+  const focusBlock = changes.focusBlock as { text?: string } | null | undefined
+  const anchorInfo = changes.anchorBlockInfo as
+    | { type?: string; functionType?: string }
+    | null
     | undefined
-  const focusBlock = changes.focusBlock as
-    | { text?: string; functionType?: string }
+  const focusInfo = changes.focusBlockInfo as
+    | { type?: string; functionType?: string }
+    | null
     | undefined
+  const rawAffiliation = (changes.affiliation ?? []) as EngineAffiliationEntry[]
+  const affiliation = rawAffiliation.map((entry) => {
+    const functionType =
+      entry.type === 'pre' || entry.type === 'figure'
+        ? CONTAINER_FUNCTION_TYPE[entry.blockName]
+        : undefined
+    return functionType ? { ...entry, functionType } : entry
+  })
   return {
     start: {
       key: anchorPath.join('/'),
       offset: (changes.anchor?.offset ?? 0) as number,
-      block: anchorBlock,
-      type: changes.type as string | undefined
+      block: { text: anchorBlock?.text, functionType: anchorInfo?.functionType },
+      type: anchorInfo?.type
     },
     end: {
       key: focusPath.join('/'),
       offset: (changes.focus?.offset ?? 0) as number,
-      block: focusBlock,
-      type: changes.type as string | undefined
+      block: { text: focusBlock?.text, functionType: focusInfo?.functionType },
+      type: focusInfo?.type
     },
-    affiliation: [] as Array<{ type: string; [key: string]: unknown }>
+    affiliation
   }
 }
 
@@ -935,10 +990,11 @@ const handleSelectAll = () => {
 }
 
 // Custom copyAsRich copyAsHtml pasteAsPlainText.
-// The engine has no `copyAsRich`; the legacy "copy as rich text" maps to
-// `copyAsHtml` (copies the rendered HTML of the selection).
-const COPY_PASTE_METHOD_MAP: Record<string, 'copyAsHtml' | 'pasteAsPlainText'> = {
-  copyAsRich: 'copyAsHtml',
+// `copyAsRich` writes the rendered HTML to `text/html` AND the plain text to
+// `text/plain`, so pasting into Word/email yields formatted rich text (whereas
+// `copyAsHtml` blanks `text/html` and puts the HTML source into `text/plain`).
+const COPY_PASTE_METHOD_MAP: Record<string, 'copyAsRich' | 'copyAsHtml' | 'pasteAsPlainText'> = {
+  copyAsRich: 'copyAsRich',
   copyAsHtml: 'copyAsHtml',
   pasteAsPlainText: 'pasteAsPlainText'
 }
@@ -1255,12 +1311,29 @@ interface FileChangePayload {
   blocks?: unknown
 }
 
+// A source-mode (CodeMirror) index cursor: `{ anchor, focus }` in `{ line, ch }`
+// coordinates. Produced by sourceCode.vue and carried on `file-changed` as
+// `muyaIndexCursor` when handing a tab back to WYSIWYG. Both `line` AND `ch`
+// must be present numbers — otherwise the engine would clamp a missing `ch` to
+// 0 and silently restore the caret to the wrong column.
+const isIndexPosition = (pos: unknown): pos is { line: number; ch: number } => {
+  const p = pos as { line?: unknown; ch?: unknown } | null
+  return !!p && typeof p.line === 'number' && typeof p.ch === 'number'
+}
+const isIndexCursor = (
+  cursor: unknown
+): cursor is { anchor: { line: number; ch: number }; focus: { line: number; ch: number } } => {
+  const c = cursor as { anchor?: unknown; focus?: unknown } | null
+  return !!c && isIndexPosition(c.anchor) && isIndexPosition(c.focus)
+}
+
 // listen for markdown change form source mode or change tabs etc
 const handleFileChange = (payload: unknown) => {
   const {
     id,
     markdown: newMarkdown,
     cursor: newCursor,
+    muyaIndexCursor,
     scrollTop
   } = (payload ?? {}) as FileChangePayload
   if (!editor.value) return
@@ -1273,13 +1346,32 @@ const handleFileChange = (payload: unknown) => {
     // in-session tab switch. The `history` in the payload is the synthetic
     // desktop-shaped history used for save tracking, not the engine history.
     editor.value.setContent(newMarkdown)
+    if (newCursor) {
+      editor.value.setCursor(newCursor)
+    } else if (isIndexCursor(muyaIndexCursor)) {
+      // Coming back from source-code mode the tab only has a CodeMirror
+      // `{ line, ch }` index cursor; map it onto a block-key cursor so the
+      // WYSIWYG caret lands where the source-mode cursor was (PG2). The engine
+      // runs its own setContent dance internally, so restore the history after.
+      editor.value.setCursorByOffset(muyaIndexCursor)
+    }
     const savedEngineHistory = id ? engineHistoryByTab.get(id) : undefined
     if (savedEngineHistory) {
       editor.value.setHistory(savedEngineHistory)
     }
-    if (newCursor) {
-      editor.value.setCursor(newCursor)
-    }
+    // PARITY (gap PG14 — accept-defer): the bulk source-mode change is rebuilt
+    // via `setContent` and is NOT recorded as an engine undo op, so the first
+    // Ctrl+Z after exiting source mode replays the last pre-source WYSIWYG op
+    // instead of reverting the source-mode edit in one step (legacy muyajs
+    // pushed a full-state snapshot that made it a single undo boundary).
+    // Recording it as one boundary would mean computing a json1 op from the
+    // pre-source state to the post-source state and feeding it through
+    // `Editor.updateContents`' pick/drop walker — but that walker only handles
+    // specific op shapes (block insert at index, text edit, checked/meta), so a
+    // general whole-document diff (arbitrary add/remove/move/nested-replace)
+    // risks corrupting the document. Deferred rather than ship a fragile fix;
+    // the prior op stack is intact and undo still works, only the first-undo
+    // granularity across the boundary differs.
   } else if (newCursor) {
     editor.value.setCursor(newCursor)
   }
@@ -1493,8 +1585,10 @@ onMounted(() => {
     const { id } = currentFile.value
     if (!id) return
     const markdown = editor.value.getMarkdown()
-    // Stash the real engine history for in-session tab-switch restoration.
-    engineHistoryByTab.set(id, editor.value.getHistory())
+    // Stash the real engine history for in-session tab-switch restoration, and
+    // derive the synthetic save-tracking id from its undo-stack depth.
+    const engineHistory = editor.value.getHistory()
+    engineHistoryByTab.set(id, engineHistory)
     editorStore.LISTEN_FOR_CONTENT_CHANGE({
       id,
       markdown,
@@ -1502,7 +1596,7 @@ onMounted(() => {
       cursor: serializeCursor(editor.value.getSelection()),
       // Synthetic, desktop-shaped history so the store's save/dirty tracking
       // keeps working (the engine history shape is incompatible).
-      history: makeSyntheticHistory(),
+      history: makeSyntheticHistory(engineHistory),
       toc: editor.value.getTOC(),
       blocks: editor.value.getState()
     })
@@ -1517,9 +1611,12 @@ onMounted(() => {
   }
   container.addEventListener('scroll', scrollHandler, { passive: true })
 
-  // NOTE (gap): the engine does not emit `heading-copy-link` yet, so the
-  // hover-to-copy-heading-anchor affordance is unavailable. `scroll-to-header`
-  // (TOC navigation) and `copyGithubSlug` (via the command/menu) still work.
+  // Clicking the hover-to-copy affordance on a heading emits `heading-copy-link`
+  // with the heading's stable slug; copy the matching GitHub anchor to the
+  // clipboard (resolved via `listToc.find(i => i.slug === key)`).
+  editor.value.on('heading-copy-link', ({ key }: { key: string }) => {
+    editorStore.copyGithubSlug(key)
+  })
 
   editor.value.on(
     'format-click',
