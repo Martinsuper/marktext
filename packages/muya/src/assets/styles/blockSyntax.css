@@ -80,8 +80,8 @@
 .mu-container h5 > .mu-copy-header-link,
 .mu-container h6 > .mu-copy-header-link {
     position: absolute;
-    top: 0.65em;
-    left: -26px;
+    top: 0;
+    left: -40px;
 
     display: inline-flex;
     align-items: center;
@@ -90,6 +90,8 @@
     height: 18px;
 
     cursor: pointer;
+
+    transform: translateY(calc(0.7em - 9px));
     opacity: 0;
 
     transition: opacity 0.2s ease;
@@ -269,7 +271,7 @@ code.mu-code .mu-code-copy:hover {
 
 /* code block line numbers (option: codeBlockLineNumbers) */
 .mu-code-block.mu-line-numbers {
-    padding-left: 3.5em;
+    padding-left: 2.5em;
 
     counter-reset: mu-linenumber;
 }
@@ -344,7 +346,7 @@ span.mu-language-input {
 }
 
 .mu-code-block.mu-fenced-code.mu-active .mu-language-input {
-    left: 30px;
+    left: 20px;
 }
 
 /* loose tight list */
@@ -535,6 +537,10 @@ li.mu-task-list-item > span.mu-checkbox-checked::before {
     text-align: left;
 }
 
+.mu-table-inner tr:first-child td {
+    font-weight: bold;
+}
+
 .mu-table-inner tr th::before,
 .mu-table-inner tr td::before {
     position: absolute;
@@ -568,7 +574,23 @@ li.mu-task-list-item > span.mu-checkbox-checked::before {
 .mu-table-inner tr td.mu-table-cell-selected::before {
     z-index: 1;
 
-    background: var(--selection-color);
+    background: var(--editor-color-04);
+}
+
+.mu-table-inner tr td.mu-table-cell-border-top::before {
+    border-top-color: var(--theme-color);
+}
+
+.mu-table-inner tr td.mu-table-cell-border-right::before {
+    border-right-color: var(--theme-color);
+}
+
+.mu-table-inner tr td.mu-table-cell-border-bottom::before {
+    border-bottom-color: var(--theme-color);
+}
+
+.mu-table-inner tr td.mu-table-cell-border-left::before {
+    border-left-color: var(--theme-color);
 }
 
 .mu-table-inner td[data-align='left'] {

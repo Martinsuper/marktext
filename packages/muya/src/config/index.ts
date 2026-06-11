@@ -182,6 +182,11 @@ export const CLASS_NAMES = genUpper2LowerKeyHash([
     'MU_SELECTION',
     'MU_SHOW_PREVIEW',
     'MU_SOFT_LINE_BREAK',
+    'MU_TABLE_CELL_SELECTED',
+    'MU_TABLE_CELL_BORDER_TOP',
+    'MU_TABLE_CELL_BORDER_RIGHT',
+    'MU_TABLE_CELL_BORDER_BOTTOM',
+    'MU_TABLE_CELL_BORDER_LEFT',
     'MU_TASK_LIST',
     'MU_TASK_LIST_ITEM',
     'MU_TASK_LIST_ITEM_CHECKBOX',
@@ -449,11 +454,11 @@ export const DEFAULT_TURNDOWN_CONFIG = {
         node: Element & { isBlock?: boolean },
         _options: unknown,
     ) {
-        if (node && node.classList.contains('mu-soft-line-break'))
+        if (node && node.classList.contains(CLASS_NAMES.MU_SOFT_LINE_BREAK))
             return LINE_BREAK;
-        else if (node && node.classList.contains('mu-hard-line-break'))
+        else if (node && node.classList.contains(CLASS_NAMES.MU_HARD_LINE_BREAK))
             return `  ${LINE_BREAK}`;
-        else if (node && node.classList.contains('mu-hard-line-break-space'))
+        else if (node && node.classList.contains(CLASS_NAMES.MU_HARD_LINE_BREAK_SPACE))
             return '';
         else
             return node.isBlock ? '\n\n' : '';
