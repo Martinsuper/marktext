@@ -4,20 +4,14 @@ import type { CommandManager } from '../../commands'
 
 type Win = BrowserWindow | null | undefined
 
-const DISABLE_LABELS: readonly string[] = [
-  // paragraph menu items
-  'heading1MenuItem',
-  'heading2MenuItem',
-  'heading3MenuItem',
-  'heading4MenuItem',
-  'heading5MenuItem',
-  'heading6MenuItem',
-  'upgradeHeadingMenuItem',
-  'degradeHeadingMenuItem',
-  'tableMenuItem',
-  // formats menu items
-  'hyperlinkMenuItem',
-  'imageMenuItem'
+// Paragraph-menu items that can actually be executed across a multi-block
+// selection; everything else is disabled when the selection spans blocks.
+const CROSS_BLOCK_ENABLED_PARAGRAPH: readonly string[] = [
+  'codeFencesMenuItem',
+  'quoteBlockMenuItem',
+  'orderListMenuItem',
+  'bulletListMenuItem',
+  'taskListMenuItem'
 ]
 
 const MENU_ID_MAP: Readonly<Record<string, string>> = Object.freeze({
@@ -34,7 +28,7 @@ const MENU_ID_MAP: Readonly<Record<string, string>> = Object.freeze({
   quoteBlockMenuItem: 'blockquote',
   orderListMenuItem: 'ol',
   bulletListMenuItem: 'ul',
-  // taskListMenuItem: 'ul',
+  taskListMenuItem: 'task',
   paragraphMenuItem: 'p',
   horizontalLineMenuItem: 'hr',
   frontMatterMenuItem: 'frontmatter' // 'pre'
@@ -181,11 +175,12 @@ export interface SelectionState {
   isMultiline?: boolean
   isCodeFences?: boolean
   isCodeContent?: boolean
+  hasFrontMatter?: boolean
 }
 
 const setCheckedMenuItem = (
   applicationMenu: Menu,
-  { affiliation, isTable, isLooseListItem, isTaskList }: SelectionState
+  { affiliation, isTable, isLooseListItem }: SelectionState
 ): void => {
   const paragraphMenuItem = applicationMenu.getMenuItemById('paragraphMenuEntry')!
   paragraphMenuItem.submenu!.items.forEach((item: MenuItem) => (item.checked = false))
@@ -196,16 +191,13 @@ const setCheckedMenuItem = (
       item.checked = !!isLooseListItem
     } else if (
       Object.keys(affiliation).some((b) => {
-        if (b === 'ul' && isTaskList) {
-          if (item.id === 'taskListMenuItem') {
-            return true
-          }
-          return false
-        } else if (isTable && item.id === 'tableMenuItem') {
+        if (isTable && item.id === 'tableMenuItem') {
           return true
         } else if (item.id === 'codeFencesMenuItem' && /code$/.test(b)) {
           return true
         }
+        // Each list kind is its own affiliation key (ol / ul / task), so a
+        // nested chain checks every level via the id map.
         return b === MENU_ID_MAP[item.id]
       })
     ) {
@@ -251,23 +243,37 @@ export const updateSelectionMenus = (
   if (isCodeFences) {
     setParagraphMenuItemStatus(applicationMenu, false)
 
-    // A code line is selected.
-    if (isCodeContent) {
-      formatMenuItem.submenu!.items.forEach((item: MenuItem) => (item.enabled = false))
+    // Non-formattable code-like content (code/math/html/frontmatter/diagram):
+    // disable every format item. Tables never reach here (they return early via
+    // isDisabled) so table cells keep formatting.
+    formatMenuItem.submenu!.items.forEach((item: MenuItem) => (item.enabled = false))
 
-      if (Object.keys(affiliation).some((b) => /code$/.test(b))) {
-        setMultipleStatus(applicationMenu, ['codeFencesMenuItem'], true)
-      }
+    // A code line is selected — re-enable the code-fence toggle.
+    if (isCodeContent && Object.keys(affiliation).some((b) => /code$/.test(b))) {
+      setMultipleStatus(applicationMenu, ['codeFencesMenuItem'], true)
     }
   } else if (isMultiline) {
+    // Format: link/image are meaningless across a multi-block selection.
     formatMenuItem.submenu!.items
-      .filter((item: MenuItem) => item.id && DISABLE_LABELS.includes(item.id))
+      .filter((item: MenuItem) => item.id === 'hyperlinkMenuItem' || item.id === 'imageMenuItem')
       .forEach((item: MenuItem) => (item.enabled = false))
-    setMultipleStatus(applicationMenu, DISABLE_LABELS, false)
+    // Paragraph: enable only the items that have a defined cross-block action.
+    const paragraphMenu = applicationMenu.getMenuItemById('paragraphMenuEntry')!
+    paragraphMenu.submenu!.items.forEach((item: MenuItem) => {
+      if (item.id) {
+        item.enabled = CROSS_BLOCK_ENABLED_PARAGRAPH.includes(item.id)
+      }
+    })
   }
 
-  // Disable loose list item.
-  if (!affiliation.ul && !affiliation.ol) {
+  // Disable loose list item when not inside any list (bullet / ordered / task).
+  if (!affiliation.ul && !affiliation.ol && !affiliation.task) {
     setMultipleStatus(applicationMenu, ['looseListItemMenuItem'], false)
+  }
+
+  // Front matter may exist at most once per document; disable the menu item
+  // whenever the document already has one.
+  if (state.hasFrontMatter) {
+    setMultipleStatus(applicationMenu, ['frontMatterMenuItem'], false)
   }
 }

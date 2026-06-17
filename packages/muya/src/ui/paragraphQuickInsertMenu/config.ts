@@ -437,7 +437,10 @@ export function showTablePicker(muya: Muya, block: Parent) {
         return;
 
     const handler = (row: number, column: number) => {
-        muya.createTable({ rows: row + 1, columns: column + 1 });
+        // The picker's trigger block (a `/table` quick-insert line or the empty
+        // paragraph the front-menu offers) is disposable, so always replace it
+        // rather than inserting the table below it.
+        muya.createTable({ rows: row + 1, columns: column + 1 }, { replace: true });
     };
 
     eventCenter.emit('muya-table-picker', { row: -1, column: -1 }, reference, handler);
@@ -517,7 +520,7 @@ function buildDiagramBlock(label: string, muya: Muya) {
     return ScrollPage.loadBlock(name).create(muya, diagramState);
 }
 
-function buildReplacementBlock(label: string, muya: Muya, text: string) {
+export function buildReplacementBlock(label: string, muya: Muya, text: string) {
     if (label.startsWith('atx-heading '))
         return buildHeadingBlock(label, muya, text);
     if (label.startsWith('diagram '))
@@ -592,19 +595,50 @@ export function replaceBlockByLabel({ block, muya, label, text = '' }: {
     const newBlock = buildReplacementBlock(label, muya, text);
 
     block.replaceWith(newBlock);
+    finishInsertedBlock(newBlock, muya, label);
+}
+
+// Position the caret after a block was inserted or replaced. A thematic-break
+// is not editable, so append a trailing empty paragraph and put the caret there
+// (so the user can keep typing below the rule); otherwise move the caret into
+// the new block.
+function finishInsertedBlock(newBlock: Parent, muya: Muya, label: string) {
     if (label === 'thematic-break') {
         const nextParagraphBlock = ScrollPage.loadBlock('paragraph').create(
             muya,
             deepClone(emptyStates.paragraph),
         );
-        newBlock.parent.insertAfter(nextParagraphBlock, newBlock);
-        const cursorBlock = nextParagraphBlock.firstContentInDescendant();
-        cursorBlock.setCursor(0, 0, true);
+        newBlock.parent!.insertAfter(nextParagraphBlock, newBlock);
+        nextParagraphBlock.firstContentInDescendant()?.setCursor(0, 0, true);
+        return;
     }
-    else {
-        const cursorBlock = newBlock.firstContentInDescendant();
-        // Set the cursor between <div>\n\n</div> when create html-block
-        const offset = label === 'html-block' ? 6 : cursorBlock.text.length;
-        cursorBlock.setCursor(offset, offset, true);
-    }
+
+    placeCaretInNewBlock(newBlock, label);
+}
+
+// Move the caret into a freshly-built block: between <div>\n\n</div> for an
+// html-block, otherwise to the end of its text.
+function placeCaretInNewBlock(newBlock: Parent, label: string) {
+    const cursorBlock = newBlock.firstContentInDescendant();
+    if (!cursorBlock)
+        return;
+
+    const offset = label === 'html-block' ? 6 : cursorBlock.text.length;
+    cursorBlock.setCursor(offset, offset, true);
+}
+
+// Build a fresh block of `label` and insert it directly AFTER `block`
+// (inside the same container), then move the caret into the new block.
+// Used by the Paragraph menu when the target type is not a valid front-menu
+// turn-into of a non-empty block.
+export function insertBlockBelowByLabel({ block, muya, label }: {
+    block: Parent;
+    muya: Muya;
+    label: string;
+}) {
+    const newBlock = buildReplacementBlock(label, muya, '');
+    if (!newBlock)
+        return;
+    block.parent!.insertAfter(newBlock, block);
+    finishInsertedBlock(newBlock, muya, label);
 }
