@@ -138,6 +138,55 @@ describe('content arrowHandler — cross-block navigation up', () => {
         expect(event.preventDefault).not.toHaveBeenCalled();
         expect(event.stopPropagation).not.toHaveBeenCalled();
     });
+
+    // #3193: ArrowUp on the first visual line of the FIRST block (no previous
+    // block) used to preventDefault and return without moving the caret, so the
+    // caret stayed put. It should move to the start of the line (offset 0).
+    it('arrowUp in the first block (no previous) moves the caret to offset 0', async () => {
+        const muya = bootMuya('alpha\n\nbeta\n');
+        const alpha = contentByText(muya, 'alpha');
+
+        const event = arrowAt(muya, alpha, 'ArrowUp', 3);
+        await flush();
+
+        const cursor = alpha.getCursor();
+        expect(cursor).not.toBeNull();
+        expect(cursor!.start.offset).toBe(0);
+        expect(event.preventDefault).toHaveBeenCalled();
+    });
+
+    // #3193 follow-up: when the caret is ALREADY at offset 0 of the first block,
+    // ArrowUp has nowhere to go — it must not re-set the selection (which would
+    // emit a spurious selection-change and needlessly re-render the block).
+    it('arrowUp already at offset 0 of the first block does not emit selection-change', async () => {
+        const muya = bootMuya('alpha\n\nbeta\n');
+        const alpha = contentByText(muya, 'alpha');
+
+        // Land at offset 0 first; this setup emits its own change.
+        muya.editor.activeContentBlock = alpha;
+        alpha.setCursor(0, 0, true);
+        await flush();
+
+        // Only now start counting: the no-op ArrowUp must stay silent.
+        let emitted = 0;
+        muya.eventCenter.on('selection-change', () => {
+            emitted += 1;
+        });
+
+        const event = {
+            preventDefault: vi.fn(),
+            stopPropagation: vi.fn(),
+            key: 'ArrowUp',
+            shiftKey: false,
+        } as unknown as FakeArrowEvent;
+        alpha.arrowHandler(event);
+        await flush();
+
+        expect(emitted).toBe(0);
+        // The caret is untouched, and the native no-op scroll is still suppressed.
+        expect(alpha.getCursor()!.start.offset).toBe(0);
+        expect(event.preventDefault).toHaveBeenCalled();
+    });
 });
 
 describe('content arrowHandler — cross-block navigation down', () => {
