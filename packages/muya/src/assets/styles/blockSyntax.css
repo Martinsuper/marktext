@@ -728,6 +728,131 @@ figure.mu-diagram-block .mu-diagram-preview img {
     max-width: 100%;
 }
 
+/* PlantUML zoom trigger — a magnifier shown on hover over the rendered image,
+   opening the fullscreen lightbox. Anchored to the preview's top-right. */
+figure.mu-diagram-block .mu-diagram-preview {
+    position: relative;
+}
+
+.mu-diagram-zoom-trigger {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    z-index: 5;
+
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
+    width: 28px;
+    height: 28px;
+    margin: 0;
+    padding: 0;
+
+    color: var(--editor-color);
+
+    background: var(--float-bg-color);
+    border: 1px solid var(--float-border-color);
+    border-radius: 4px;
+    box-shadow: 0 1px 4px 0 rgb(0 0 0 / 12%);
+    cursor: zoom-in;
+    opacity: 0;
+
+    transition: opacity 0.15s ease;
+}
+
+.mu-diagram-zoom-trigger:hover {
+    background: var(--float-hover-color);
+}
+
+.mu-diagram-zoom-trigger:focus-visible {
+    opacity: 1;
+}
+
+figure.mu-diagram-block .mu-diagram-preview:hover .mu-diagram-zoom-trigger {
+    opacity: 1;
+}
+
+/* Fullscreen lightbox for inspecting a diagram image. Lives on `document.body`,
+   so it is intentionally NOT scoped under `figure.mu-diagram-block`. */
+.mu-diagram-zoom-overlay {
+    position: fixed;
+    z-index: 100000;
+
+    overflow: hidden;
+
+    background: rgb(0 0 0 / 55%);
+    cursor: zoom-out;
+
+    inset: 0;
+}
+
+.mu-diagram-zoom-overlay.mu-diagram-zoom-panning {
+    cursor: grabbing;
+}
+
+.mu-diagram-zoom-img {
+    position: absolute;
+    top: 0;
+    left: 0;
+
+    max-width: none;
+
+    transform-origin: 0 0;
+
+    user-select: none;
+}
+
+.mu-diagram-zoom-toolbar {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    z-index: 1;
+
+    display: flex;
+    gap: 4px;
+    align-items: center;
+    padding: 4px 8px;
+
+    background: var(--float-bg-color);
+    border: 1px solid var(--float-border-color);
+    border-radius: 6px;
+    box-shadow: 0 2px 12px 0 rgb(0 0 0 / 25%);
+    transform: translateX(-50%);
+    cursor: default;
+}
+
+.mu-diagram-zoom-percent {
+    min-width: 48px;
+
+    color: var(--editor-color);
+    font-size: 13px;
+    text-align: center;
+    font-variant-numeric: tabular-nums;
+}
+
+.mu-diagram-zoom-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
+    width: 30px;
+    height: 30px;
+    margin: 0;
+    padding: 0;
+
+    color: var(--editor-color);
+
+    background: transparent;
+    border: 0;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.mu-diagram-zoom-btn:hover {
+    background: var(--float-hover-color);
+}
+
 /* to prevent rendered diagram <svg> (e.g. a wide sequence diagram) overflowing
    and getting clipped by the block */
 figure.mu-diagram-block .mu-diagram-preview > svg {

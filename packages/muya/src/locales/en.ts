@@ -96,5 +96,11 @@ export const en = {
         'Input Front Matter...': 'Input Front Matter...',
         'Invalid Mathematical Formula': 'Invalid Mathematical Formula',
         'Empty Mathematical Formula': 'Empty Mathematical Formula',
+        // diagram zoom
+        'Zoom diagram': 'Zoom diagram',
+        'Zoom in': 'Zoom in',
+        'Zoom out': 'Zoom out',
+        'Reset zoom': 'Reset zoom',
+        'Close': 'Close',
     },
 };

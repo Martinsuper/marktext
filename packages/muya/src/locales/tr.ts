@@ -96,5 +96,11 @@ export const tr = {
         'Input Front Matter...': 'Ön Bilgiyi girin...',
         'Invalid Mathematical Formula': 'Geçersiz Matematiksel Formül',
         'Empty Mathematical Formula': 'Boş Matematiksel Formül',
+        // diagram zoom
+        'Zoom diagram': 'Diyagramı yakınlaştır',
+        'Zoom in': 'Yakınlaştır',
+        'Zoom out': 'Uzaklaştır',
+        'Reset zoom': 'Yakınlaştırmayı sıfırla',
+        'Close': 'Kapat',
     },
 };

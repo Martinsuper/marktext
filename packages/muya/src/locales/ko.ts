@@ -96,5 +96,11 @@ export const ko = {
         'Input Front Matter...': '머리말 입력...',
         'Invalid Mathematical Formula': '잘못된 수식',
         'Empty Mathematical Formula': '빈 수식',
+        // diagram zoom
+        'Zoom diagram': '다이어그램 확대',
+        'Zoom in': '확대',
+        'Zoom out': '축소',
+        'Reset zoom': '확대/축소 초기화',
+        'Close': '닫기',
     },
 };
