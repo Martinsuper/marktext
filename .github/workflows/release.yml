@@ -6,13 +6,33 @@ on:
     # (e.g. `vbad.tag`) instead of them silently not triggering anything.
     tags:
       - 'v*'
+  # Manual trigger from the Actions tab. Lets you build installers on demand
+  # without cutting a tag. When `publish_release` is left unchecked the run
+  # only uploads downloadable artifacts (no GitHub Release is created).
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Release/tag name, e.g. v0.20.0-test.1 (required only when publishing)'
+        type: string
+        required: false
+      publish_release:
+        description: 'Publish a real GitHub Release (unchecked = build artifacts only)'
+        type: boolean
+        default: false
 
 concurrency:
-  group: release-${{ github.ref }}
+  # Key on the dispatched version when present so concurrent manual runs for
+  # different versions don't serialize behind one another.
+  group: release-${{ inputs.version || github.ref }}
   cancel-in-progress: false
 
 permissions:
   contents: read
+
+env:
+  # Effective release name: the tag on a tag push, the typed input on dispatch
+  # (github.ref_name is just `main` on a workflow_dispatch from a branch).
+  RELEASE_NAME: ${{ github.event_name == 'workflow_dispatch' && inputs.version || github.ref_name }}
 
 jobs:
   validate:
@@ -20,14 +40,20 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Validate semver tag
+        # Only enforce a valid name when a release will actually be published.
+        # On artifact-only dispatch runs there's no name to validate; the job
+        # still succeeds so `build` (needs: validate) isn't skipped.
+        if: github.event_name == 'push' || inputs.publish_release
+        env:
+          # Pass via env (not inline ${{ }}) so a crafted input can't inject shell.
+          NAME: ${{ env.RELEASE_NAME }}
         run: |
-          tag="${GITHUB_REF_NAME}"
           # SemVer 2.0.0 with leading "v"
-          if ! [[ "$tag" =~ ^v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(-[0-9A-Za-z.-]+)?(\+[0-9A-Za-z.-]+)?$ ]]; then
-            echo "::error::Tag '$tag' is not a valid semver (expected vX.Y.Z[-prerelease][+build])"
+          if ! [[ "$NAME" =~ ^v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(-[0-9A-Za-z.-]+)?(\+[0-9A-Za-z.-]+)?$ ]]; then
+            echo "::error::Tag '$NAME' is not a valid semver (expected vX.Y.Z[-prerelease][+build])"
             exit 1
           fi
-          echo "Tag '$tag' is valid."
+          echo "Tag '$NAME' is valid."
 
   build:
     name: Build (${{ matrix.name }})
@@ -135,7 +161,7 @@ jobs:
         uses: actions/upload-artifact@v4.6.2
         with:
           name: marktext-${{ matrix.name }}
-          retention-days: 7
+          retention-days: 14
           if-no-files-found: error
           path: |
             dist/*.exe
@@ -152,6 +178,11 @@ jobs:
   release:
     name: Publish GitHub Release
     needs: build
+    # Publish a Release only on a tag push, or on a manual dispatch that opted
+    # in. Bare `inputs.publish_release` (a real boolean) — never `== 'true'`,
+    # which GitHub coerces to false. Otherwise the run ends after `build` with
+    # only artifacts uploaded.
+    if: github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.publish_release)
     runs-on: ubuntu-latest
     # Per-job permissions REPLACE workflow-level ones, so re-declare
     # both: contents:write to publish the release, actions:read for
@@ -182,7 +213,7 @@ jobs:
 
       - name: Compose release notes body
         env:
-          IS_PRERELEASE: ${{ contains(github.ref_name, '-') }}
+          IS_PRERELEASE: ${{ contains(env.RELEASE_NAME, '-') }}
         run: |
           {
             if [[ "$IS_PRERELEASE" == "true" ]]; then
@@ -211,9 +242,15 @@ jobs:
         uses: softprops/action-gh-release@v2.6.2
         with:
           draft: true
-          prerelease: ${{ contains(github.ref_name, '-') }}
+          # On a manual dispatch there is no tag ref, so name the tag explicitly
+          # and tell the action which commit to create it at. The action
+          # materializes the tag via the API (which does NOT re-fire
+          # `push: tags`). On a tag push, target_commitish is ignored.
+          tag_name: ${{ env.RELEASE_NAME }}
+          name: ${{ env.RELEASE_NAME }}
+          target_commitish: ${{ github.sha }}
+          prerelease: ${{ contains(env.RELEASE_NAME, '-') }}
           generate_release_notes: true
-          name: ${{ github.ref_name }}
           body_path: release_body.md
           fail_on_unmatched_files: true
           files: dist/*
@@ -221,6 +258,9 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Promote draft to published release
-        run: gh release edit "${GITHUB_REF_NAME}" --draft=false --repo "${GITHUB_REPOSITORY}"
+        # Identify the release by its tag name (env.RELEASE_NAME); on dispatch
+        # GITHUB_REF_NAME is `main` and would not match.
+        run: gh release edit "${RELEASE_NAME}" --draft=false --repo "${GITHUB_REPOSITORY}"
         env:
+          RELEASE_NAME: ${{ env.RELEASE_NAME }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

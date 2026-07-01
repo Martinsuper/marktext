@@ -102,5 +102,7 @@ export const tr = {
         'Zoom out': 'Uzaklaştır',
         'Reset zoom': 'Yakınlaştırmayı sıfırla',
         'Close': 'Kapat',
+        // diagram context menu
+        'Copy source code': 'Kaynak kodunu kopyala',
     },
 };

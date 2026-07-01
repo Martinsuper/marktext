@@ -102,5 +102,7 @@ export const zhTW = {
         'Zoom out': '縮小',
         'Reset zoom': '重設縮放',
         'Close': '關閉',
+        // diagram context menu
+        'Copy source code': '複製原始碼',
     },
 };

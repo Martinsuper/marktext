@@ -2,11 +2,13 @@ import type I18n from '../../../i18n';
 import type { Muya } from '../../../muya';
 import type { IDiagramState, TState } from '../../../state/types';
 import { fromEvent } from 'rxjs';
+import { CopyType } from '../../../clipboard/types';
 import { CLASS_NAMES, PREVIEW_DOMPURIFY_CONFIG } from '../../../config';
 import { sanitize } from '../../../utils';
 import loadRenderer from '../../../utils/diagram';
 import logger from '../../../utils/logger';
 import Parent from '../../base/parent';
+import { openDiagramContextMenu } from './contextMenu';
 import { openDiagramZoom } from './zoom';
 
 const debug = logger('diagramPreview:');
@@ -199,6 +201,9 @@ class DiagramPreview extends Parent {
     private _attachDOMEvents() {
         const clickObservable = fromEvent(this.domNode!, 'click');
         clickObservable.subscribe(this.clickHandler.bind(this));
+
+        const contextMenuObservable = fromEvent(this.domNode!, 'contextmenu');
+        contextMenuObservable.subscribe(this.contextMenuHandler.bind(this));
     }
 
     clickHandler(event: Event) {
@@ -210,6 +215,27 @@ class DiagramPreview extends Parent {
 
         const cursorBlock = this.parent.firstContentInDescendant();
         cursorBlock?.setCursor(0, 0);
+    }
+
+    // Right-click any rendered diagram (img for plantuml, svg for the rest) to
+    // copy its raw fenced source — `this._code` is the source for every type.
+    contextMenuHandler(event: Event) {
+        event.preventDefault();
+        event.stopPropagation();
+
+        if (!this._code)
+            return;
+
+        const { i18n, editor } = this.muya;
+        const { clientX, clientY } = event as MouseEvent;
+        openDiagramContextMenu(clientX, clientY, [
+            {
+                label: i18n.t('Copy source code'),
+                onClick: () => {
+                    editor.clipboard.copy(CopyType.COPY_CODE_CONTENT, this._code);
+                },
+            },
+        ]);
     }
 
     async update(code = this._code) {

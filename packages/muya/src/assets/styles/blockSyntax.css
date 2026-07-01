@@ -853,6 +853,46 @@ figure.mu-diagram-block .mu-diagram-preview:hover .mu-diagram-zoom-trigger {
     background: var(--float-hover-color);
 }
 
+/* Right-click "copy source code" menu for diagram previews. Lives on
+   `document.body` and is positioned at the cursor via inline left/top, so it
+   is intentionally NOT scoped under `figure.mu-diagram-block`. */
+.mu-diagram-context-menu {
+    position: fixed;
+    z-index: 100000;
+
+    min-width: 140px;
+    margin: 0;
+    padding: 4px;
+
+    list-style: none;
+
+    background: var(--float-bg-color);
+    border: 1px solid var(--float-border-color);
+    border-radius: 4px;
+    box-shadow: 0 2px 12px 0 rgb(0 0 0 / 25%);
+
+    opacity: 0;
+}
+
+.mu-diagram-context-menu-visible {
+    opacity: 1;
+}
+
+.mu-diagram-context-menu-item {
+    padding: 6px 12px;
+
+    color: var(--editor-color);
+    font-size: 14px;
+    white-space: nowrap;
+
+    border-radius: 3px;
+    cursor: pointer;
+}
+
+.mu-diagram-context-menu-item:hover {
+    background: var(--float-hover-color);
+}
+
 /* to prevent rendered diagram <svg> (e.g. a wide sequence diagram) overflowing
    and getting clipped by the block */
 figure.mu-diagram-block .mu-diagram-preview > svg {

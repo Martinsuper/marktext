@@ -102,5 +102,7 @@ export const zhCN = {
         'Zoom out': '缩小',
         'Reset zoom': '重置缩放',
         'Close': '关闭',
+        // diagram context menu
+        'Copy source code': '复制源代码',
     },
 };

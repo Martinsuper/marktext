@@ -102,5 +102,7 @@ export const ja = {
         'Zoom out': '縮小',
         'Reset zoom': 'ズームをリセット',
         'Close': '閉じる',
+        // diagram context menu
+        'Copy source code': 'ソースコードをコピー',
     },
 };

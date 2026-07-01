@@ -102,5 +102,7 @@ export const ko = {
         'Zoom out': '축소',
         'Reset zoom': '확대/축소 초기화',
         'Close': '닫기',
+        // diagram context menu
+        'Copy source code': '소스 코드 복사',
     },
 };

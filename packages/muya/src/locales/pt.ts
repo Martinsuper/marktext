@@ -102,5 +102,7 @@ export const pt = {
         'Zoom out': 'Afastar',
         'Reset zoom': 'Redefinir zoom',
         'Close': 'Fechar',
+        // diagram context menu
+        'Copy source code': 'Copiar código-fonte',
     },
 };

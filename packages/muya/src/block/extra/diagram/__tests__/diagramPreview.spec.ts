@@ -2,6 +2,7 @@
 import type { Muya } from '../../../../muya';
 import type { IDiagramMeta, IDiagramState } from '../../../../state/types';
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { CopyType } from '../../../../clipboard/types';
 import { CLASS_NAMES } from '../../../../config';
 import I18n from '../../../../i18n';
 import { en } from '../../../../locales/en';
@@ -18,26 +19,40 @@ vi.mock('../../../../utils/diagram', () => ({
     default: (...args: unknown[]) => loadRendererMock(...args),
 }));
 
+// Mock the context-menu module so we can assert the handler's wiring (which
+// menu items it opens with) without exercising the floating-DOM behavior,
+// which is the module's own concern.
+const openDiagramContextMenuMock = vi.fn();
+vi.mock('../contextMenu', () => ({
+    openDiagramContextMenu: (...args: unknown[]) => openDiagramContextMenuMock(...args),
+}));
+
 const bootedHosts: HTMLElement[] = [];
 
 afterEach(() => {
     while (bootedHosts.length) bootedHosts.pop()!.remove();
     loadRendererMock.mockReset();
+    openDiagramContextMenuMock.mockReset();
 });
 
 // Build a structurally-typed fake `Muya` carrying only what DiagramPreview
-// touches: an `i18n` with `.t(key)` and `options` with the diagram themes.
-function makeFakeMuya(locale = en): { muya: Muya; i18n: I18n } {
+// touches: an `i18n` with `.t(key)`, `options` with the diagram themes, and an
+// `editor.clipboard.copy` spy for the right-click "copy source code" path.
+function makeFakeMuya(locale = en): { muya: Muya; i18n: I18n; copySpy: ReturnType<typeof vi.fn> } {
+    const copySpy = vi.fn();
     const muya = {
         options: {
             mermaidTheme: 'default',
             vegaTheme: 'default',
             sequenceTheme: 'hand',
         },
+        editor: {
+            clipboard: { copy: copySpy },
+        },
     } as unknown as Muya;
     const i18n = new I18n(muya, locale);
     (muya as unknown as { i18n: I18n }).i18n = i18n;
-    return { muya, i18n };
+    return { muya, i18n, copySpy };
 }
 
 function makeState(text: string, type: IDiagramMeta['type'] = 'mermaid'): IDiagramState {
@@ -51,10 +66,10 @@ function makeState(text: string, type: IDiagramMeta['type'] = 'mermaid'): IDiagr
 // DiagramPreview's constructor fires `update()` unawaited. To get a
 // deterministic DOM, construct it, then await our own `update()` call.
 function makePreview(text: string, type: IDiagramMeta['type'] = 'mermaid', locale = en) {
-    const { muya, i18n } = makeFakeMuya(locale);
+    const { muya, i18n, copySpy } = makeFakeMuya(locale);
     const preview = new DiagramPreview(muya, makeState(text, type));
     bootedHosts.push(preview.domNode!);
-    return { preview, muya, i18n };
+    return { preview, muya, i18n, copySpy };
 }
 
 describe('diagramPreview — empty state', () => {
@@ -218,5 +233,69 @@ describe('diagramPreview — renderer theme pass-through', () => {
             tooltip: false,
             renderer: 'svg',
         });
+    });
+});
+
+describe('diagramPreview — contextMenuHandler (copy source code)', () => {
+    it('preventDefault + stopPropagation and opens a menu at the cursor with a "Copy source code" item', () => {
+        const { preview, copySpy } = makePreview('@startuml\nA->B\n@enduml', 'plantuml');
+
+        const event = {
+            preventDefault: vi.fn(),
+            stopPropagation: vi.fn(),
+            clientX: 42,
+            clientY: 99,
+        } as unknown as Event;
+
+        preview.contextMenuHandler(event);
+
+        expect(event.preventDefault).toHaveBeenCalledTimes(1);
+        expect(event.stopPropagation).toHaveBeenCalledTimes(1);
+        expect(openDiagramContextMenuMock).toHaveBeenCalledTimes(1);
+
+        const [x, y, items] = openDiagramContextMenuMock.mock.lastCall!;
+        expect(x).toBe(42);
+        expect(y).toBe(99);
+        expect(items).toHaveLength(1);
+        expect(items[0].label).toBe('Copy source code');
+
+        // Invoking the item copies the raw fenced source via the same clipboard
+        // mechanism the code block uses.
+        expect(copySpy).not.toHaveBeenCalled();
+        items[0].onClick();
+        expect(copySpy).toHaveBeenCalledWith(CopyType.COPY_CODE_CONTENT, '@startuml\nA->B\n@enduml');
+    });
+
+    it('localizes the menu label via i18n (zh-CN)', () => {
+        const { preview } = makePreview('graph TD; A-->B', 'mermaid', zhCN);
+
+        const event = {
+            preventDefault: vi.fn(),
+            stopPropagation: vi.fn(),
+            clientX: 0,
+            clientY: 0,
+        } as unknown as Event;
+
+        preview.contextMenuHandler(event);
+
+        const [, , items] = openDiagramContextMenuMock.mock.lastCall!;
+        expect(items[0].label).toBe('复制源代码');
+    });
+
+    it('does not open a menu when the diagram source is empty', () => {
+        const { preview } = makePreview('');
+
+        const event = {
+            preventDefault: vi.fn(),
+            stopPropagation: vi.fn(),
+            clientX: 0,
+            clientY: 0,
+        } as unknown as Event;
+
+        preview.contextMenuHandler(event);
+
+        // Still swallow the native menu, but nothing to copy → no menu.
+        expect(event.preventDefault).toHaveBeenCalledTimes(1);
+        expect(openDiagramContextMenuMock).not.toHaveBeenCalled();
     });
 });

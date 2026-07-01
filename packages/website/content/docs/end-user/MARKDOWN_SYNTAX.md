@@ -730,6 +730,8 @@ $$
 
 MarkText support class, flow chart, gantt and sequence diagrams powered by flowchart.js, mermaid and Vega-Lite. [Code](#code) blocks with special language identifiers are used for diagrams.
 
+> **Tip:** Right-click a rendered diagram (PlantUML, Mermaid, flowchart, sequence or Vega-Lite) and choose **Copy source code** to copy its raw diagram source to the clipboard, without entering edit mode.
+
 For example, this:
 
 <pre>
