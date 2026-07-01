@@ -55,7 +55,10 @@
   "isHtmlEnabled": true,
   "isGitlabCompatibilityEnabled": false,
   "sequenceTheme": "hand",
+  "plantumlRenderer": "remote",
   "plantumlServer": "https://www.plantuml.com/plantuml",
+  "plantumlJarPath": "",
+  "plantumlJavaPath": "java",
 
   "theme": "light",
   "followSystemTheme": true,

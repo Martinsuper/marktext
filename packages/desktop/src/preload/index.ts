@@ -226,6 +226,13 @@ const fontsAPI = {
   list: () => invoke('mt::fonts::list')
 }
 
+const plantumlAPI = {
+  renderLocal: (req: { code: string; jarPath: string; javaPath: string }) =>
+    invoke('mt::plantuml::render-local', req),
+  selectJar: () => invoke('mt::plantuml::select-jar'),
+  selectJava: () => invoke('mt::plantuml::select-java')
+}
+
 const electronAPI = {
   ipcRenderer: ipcWrapper,
   shell: shellAPI,
@@ -294,6 +301,7 @@ try {
   contextBridge.exposeInMainWorld('ripgrep', ripgrepAPI)
   contextBridge.exposeInMainWorld('uploader', uploaderAPI)
   contextBridge.exposeInMainWorld('fonts', fontsAPI)
+  contextBridge.exposeInMainWorld('plantuml', plantumlAPI)
 } catch (error) {
   console.error(error)
 }

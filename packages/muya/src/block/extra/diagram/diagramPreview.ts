@@ -90,7 +90,9 @@ interface IRenderOptions {
     target: HTMLElement;
     vegaTheme: string;
     mermaidTheme: string;
+    plantumlRenderer: 'remote' | 'local';
     plantumlServer: string;
+    plantumlLocalRender?: (code: string) => Promise<string>;
     sequenceTheme: 'hand' | 'simple';
 }
 
@@ -100,7 +102,9 @@ async function renderDiagram({
     target,
     vegaTheme,
     mermaidTheme,
+    plantumlRenderer,
     plantumlServer,
+    plantumlLocalRender,
     sequenceTheme,
 }: IRenderOptions) {
     const render = await loadRenderer(type);
@@ -119,9 +123,14 @@ async function renderDiagram({
     }
 
     if (type === 'plantuml') {
-        const diagram = render.parse(code, plantumlServer);
-        target.innerHTML = '';
-        diagram.insertImgElement(target);
+        if (plantumlRenderer === 'local' && plantumlLocalRender) {
+            await render.renderLocal(code, target, plantumlLocalRender);
+        }
+        else {
+            const diagram = render.parse(code, plantumlServer);
+            target.innerHTML = '';
+            diagram.insertImgElement(target);
+        }
     }
     else if (type === 'vega-lite') {
         await render(target, JSON.parse(code), options);
@@ -210,7 +219,7 @@ class DiagramPreview extends Parent {
 
         if (code) {
             this.domNode!.innerHTML = i18n.t('Loading...');
-            const { mermaidTheme, vegaTheme, plantumlServer, sequenceTheme } = this.muya.options;
+            const { mermaidTheme, vegaTheme, plantumlRenderer, plantumlServer, plantumlLocalRender, sequenceTheme } = this.muya.options;
             const { _type: type } = this;
 
             try {
@@ -220,7 +229,9 @@ class DiagramPreview extends Parent {
                     type,
                     mermaidTheme,
                     vegaTheme,
+                    plantumlRenderer,
                     plantumlServer,
+                    plantumlLocalRender,
                     sequenceTheme,
                 });
                 if (type === 'plantuml')
