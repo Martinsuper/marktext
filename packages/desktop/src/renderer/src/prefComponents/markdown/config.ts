@@ -94,3 +94,14 @@ export const getSequenceThemeOptions = (): PrefSelectOption<string>[] => [
     value: 'simple'
   }
 ]
+
+export const getPlantumlRendererOptions = (): PrefSelectOption<string>[] => [
+  {
+    label: t('preferences.markdown.diagrams.plantumlRenderer.remote'),
+    value: 'remote'
+  },
+  {
+    label: t('preferences.markdown.diagrams.plantumlRenderer.local'),
+    value: 'local'
+  }
+]

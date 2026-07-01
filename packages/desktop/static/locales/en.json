@@ -409,7 +409,10 @@
         "isHtmlEnabled": "Enable HTML rendering",
         "isGitlabCompatibilityEnabled": "Enable GitLab compatibility mode",
         "sequenceTheme": "Sequence diagram theme",
+        "plantumlRenderer": "PlantUML rendering mode",
         "plantumlServer": "PlantUML server URL",
+        "plantumlJarPath": "Path to local plantuml.jar file",
+        "plantumlJavaPath": "Path to Java executable",
         "theme": "Select the theme used in MarkText",
         "followSystemTheme": "Follow System Theme",
         "lightModeTheme": "Theme to use when system is in light mode",
@@ -635,13 +638,26 @@
       },
       "diagrams": {
         "title": "Diagrams",
+        "browse": "Browse...",
         "sequenceTheme": {
           "title": "Sequence Theme",
           "handDrawn": "Hand Drawn",
           "simple": "Simple"
         },
+        "plantumlRenderer": {
+          "title": "PlantUML Renderer",
+          "remote": "Remote Server",
+          "local": "Local JAR"
+        },
         "plantumlServer": {
           "title": "PlantUML Server URL"
+        },
+        "plantumlJarPath": {
+          "title": "PlantUML JAR Path",
+          "placeholder": "Select plantuml.jar file"
+        },
+        "plantumlJavaPath": {
+          "title": "Java Executable Path"
         }
       },
       "misc": {

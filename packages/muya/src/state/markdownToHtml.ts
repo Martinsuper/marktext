@@ -114,9 +114,15 @@ export class MarkdownToHtml {
 
             try {
                 if (functionType === 'plantuml') {
-                    const diagram = render.parse(rawCode, this._muya?.options.plantumlServer);
-                    diagramContainer.innerHTML = '';
-                    diagram.insertImgElement(diagramContainer);
+                    const { plantumlRenderer, plantumlLocalRender, plantumlServer } = this._muya?.options ?? {};
+                    if (plantumlRenderer === 'local' && plantumlLocalRender) {
+                        await render.renderLocal(rawCode, diagramContainer, plantumlLocalRender);
+                    }
+                    else {
+                        const diagram = render.parse(rawCode, plantumlServer);
+                        diagramContainer.innerHTML = '';
+                        diagram.insertImgElement(diagramContainer);
+                    }
                 }
                 else if (functionType === 'flowchart' || functionType === 'sequence') {
                     const diagram = render.parse(rawCode);

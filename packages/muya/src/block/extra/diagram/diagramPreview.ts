@@ -1,3 +1,4 @@
+import type I18n from '../../../i18n';
 import type { Muya } from '../../../muya';
 import type { IDiagramState, TState } from '../../../state/types';
 import { fromEvent } from 'rxjs';
@@ -6,8 +7,45 @@ import { sanitize } from '../../../utils';
 import loadRenderer from '../../../utils/diagram';
 import logger from '../../../utils/logger';
 import Parent from '../../base/parent';
+import { openDiagramZoom } from './zoom';
 
 const debug = logger('diagramPreview:');
+
+// A magnifier shown on the rendered PlantUML image; clicking it opens the
+// fullscreen zoom lightbox.
+const ZOOM_TRIGGER_ICON
+    = '<svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"><circle cx="6.5" cy="6.5" r="4.5"/><path d="M10 10 14 14M6.5 4.5v4M4.5 6.5h4"/></svg>';
+
+// PlantUML uniquely renders as an `<img>` of a server-side SVG that CSS caps at
+// the editor column width, so dense diagrams become unreadable. Append a zoom
+// trigger that opens a pannable/zoomable fullscreen view of that same image.
+function attachZoomButton(target: HTMLElement, i18n: I18n): void {
+    const img = target.querySelector('img');
+    if (!img)
+        return;
+
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'mu-diagram-zoom-trigger';
+    const label = i18n.t('Zoom diagram');
+    button.title = label;
+    button.setAttribute('aria-label', label);
+    button.innerHTML = ZOOM_TRIGGER_ICON;
+    // Keep the press off the preview so it neither enters edit mode nor starts
+    // a block selection — only the lightbox should open.
+    button.addEventListener('mousedown', event => event.stopPropagation());
+    button.addEventListener('click', (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        openDiagramZoom(img.src, {
+            zoomIn: i18n.t('Zoom in'),
+            zoomOut: i18n.t('Zoom out'),
+            reset: i18n.t('Reset zoom'),
+            close: i18n.t('Close'),
+        });
+    });
+    target.appendChild(button);
+}
 
 // Give a fixed-size `<svg>` (one with `width`/`height` px attributes but no
 // `viewBox`) a viewBox derived from those dimensions, so `max-width: 100%`
@@ -52,7 +90,9 @@ interface IRenderOptions {
     target: HTMLElement;
     vegaTheme: string;
     mermaidTheme: string;
+    plantumlRenderer: 'remote' | 'local';
     plantumlServer: string;
+    plantumlLocalRender?: (code: string) => Promise<string>;
     sequenceTheme: 'hand' | 'simple';
 }
 
@@ -62,7 +102,9 @@ async function renderDiagram({
     target,
     vegaTheme,
     mermaidTheme,
+    plantumlRenderer,
     plantumlServer,
+    plantumlLocalRender,
     sequenceTheme,
 }: IRenderOptions) {
     const render = await loadRenderer(type);
@@ -81,9 +123,14 @@ async function renderDiagram({
     }
 
     if (type === 'plantuml') {
-        const diagram = render.parse(code, plantumlServer);
-        target.innerHTML = '';
-        diagram.insertImgElement(target);
+        if (plantumlRenderer === 'local' && plantumlLocalRender) {
+            await render.renderLocal(code, target, plantumlLocalRender);
+        }
+        else {
+            const diagram = render.parse(code, plantumlServer);
+            target.innerHTML = '';
+            diagram.insertImgElement(target);
+        }
     }
     else if (type === 'vega-lite') {
         await render(target, JSON.parse(code), options);
@@ -172,7 +219,7 @@ class DiagramPreview extends Parent {
 
         if (code) {
             this.domNode!.innerHTML = i18n.t('Loading...');
-            const { mermaidTheme, vegaTheme, plantumlServer, sequenceTheme } = this.muya.options;
+            const { mermaidTheme, vegaTheme, plantumlRenderer, plantumlServer, plantumlLocalRender, sequenceTheme } = this.muya.options;
             const { _type: type } = this;
 
             try {
@@ -182,9 +229,13 @@ class DiagramPreview extends Parent {
                     type,
                     mermaidTheme,
                     vegaTheme,
+                    plantumlRenderer,
                     plantumlServer,
+                    plantumlLocalRender,
                     sequenceTheme,
                 });
+                if (type === 'plantuml')
+                    attachZoomButton(this.domNode!, i18n);
             }
             catch (error) {
                 const detail

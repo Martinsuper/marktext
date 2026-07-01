@@ -80,7 +80,10 @@ export interface PreferencesState {
   isHtmlEnabled: boolean
   isGitlabCompatibilityEnabled: boolean
   sequenceTheme: SequenceTheme | string
+  plantumlRenderer: 'remote' | 'local'
   plantumlServer: string
+  plantumlJarPath: string
+  plantumlJavaPath: string
 
   // ----- Theme -----
   theme: string
@@ -196,7 +199,10 @@ export const usePreferencesStore = defineStore('preferences', {
     isHtmlEnabled: true,
     isGitlabCompatibilityEnabled: false,
     sequenceTheme: 'hand',
+    plantumlRenderer: 'remote',
     plantumlServer: 'https://www.plantuml.com/plantuml',
+    plantumlJarPath: '',
+    plantumlJavaPath: 'java',
 
     theme: 'light',
     followSystemTheme: true,

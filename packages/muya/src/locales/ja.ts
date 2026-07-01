@@ -96,5 +96,11 @@ export const ja = {
         'Input Front Matter...': 'ヘッダーを入力する...',
         'Invalid Mathematical Formula': '数式が間違っている',
         'Empty Mathematical Formula': '数式がありません',
+        // diagram zoom
+        'Zoom diagram': '図表を拡大',
+        'Zoom in': '拡大',
+        'Zoom out': '縮小',
+        'Reset zoom': 'ズームをリセット',
+        'Close': '閉じる',
     },
 };

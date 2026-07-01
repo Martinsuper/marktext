@@ -96,5 +96,11 @@ export const zhTW = {
         'Input Front Matter...': '輸入頁首資訊...',
         'Invalid Mathematical Formula': '數學公式錯誤',
         'Empty Mathematical Formula': '空數學公式',
+        // diagram zoom
+        'Zoom diagram': '放大圖表',
+        'Zoom in': '放大',
+        'Zoom out': '縮小',
+        'Reset zoom': '重設縮放',
+        'Close': '關閉',
     },
 };

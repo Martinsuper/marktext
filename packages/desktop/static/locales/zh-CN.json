@@ -410,7 +410,10 @@
         "isHtmlEnabled": "启用 HTML 渲染",
         "isGitlabCompatibilityEnabled": "启用 GitLab 兼容模式",
         "sequenceTheme": "序列图主题",
+        "plantumlRenderer": "PlantUML 渲染方式",
         "plantumlServer": "PlantUML 服务器 URL",
+        "plantumlJarPath": "本地 plantuml.jar 文件路径",
+        "plantumlJavaPath": "Java 可执行文件路径",
         "theme": "选择 MarkText 中使用的主题",
         "followSystemTheme": "跟随系统主题",
         "lightModeTheme": "系统处于浅色模式时使用的主题",
@@ -635,13 +638,26 @@
       },
       "diagrams": {
         "title": "图表",
+        "browse": "浏览...",
         "sequenceTheme": {
           "title": "序列图主题",
           "handDrawn": "手绘",
           "simple": "简单"
         },
+        "plantumlRenderer": {
+          "title": "PlantUML 渲染方式",
+          "remote": "远程服务器",
+          "local": "本地 JAR"
+        },
         "plantumlServer": {
           "title": "PlantUML 服务器 URL"
+        },
+        "plantumlJarPath": {
+          "title": "PlantUML JAR 路径",
+          "placeholder": "选择 plantuml.jar 文件"
+        },
+        "plantumlJavaPath": {
+          "title": "Java 可执行文件路径"
         }
       },
       "misc": {

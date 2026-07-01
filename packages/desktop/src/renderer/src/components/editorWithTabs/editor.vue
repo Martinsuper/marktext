@@ -613,6 +613,24 @@ watch(() => preferencesStore.plantumlServer, (value, oldValue) => {
   }
 })
 
+watch(() => preferencesStore.plantumlRenderer, (value, oldValue) => {
+  if (value !== oldValue && editor.value) {
+    editor.value.setOptions({ plantumlRenderer: value }, true)
+  }
+})
+
+watch(() => preferencesStore.plantumlJarPath, (value, oldValue) => {
+  if (value !== oldValue && editor.value && preferencesStore.plantumlRenderer === 'local') {
+    editor.value.setOptions({}, true)
+  }
+})
+
+watch(() => preferencesStore.plantumlJavaPath, (value, oldValue) => {
+  if (value !== oldValue && editor.value && preferencesStore.plantumlRenderer === 'local') {
+    editor.value.setOptions({}, true)
+  }
+})
+
 watch(listIndentation, (value, oldValue) => {
   if (value !== oldValue && editor.value) {
     editor.value.setListIndentation(value)
@@ -1716,7 +1734,17 @@ onMounted(() => {
     hideLinkPopup: hideLinkPopup.value,
     autoCheck: autoCheck.value,
     sequenceTheme: sequenceTheme.value,
+    plantumlRenderer: preferencesStore.plantumlRenderer,
     plantumlServer: preferencesStore.plantumlServer,
+    plantumlLocalRender: async (code: string) => {
+      const result = await window.plantuml.renderLocal({
+        code,
+        jarPath: preferencesStore.plantumlJarPath,
+        javaPath: preferencesStore.plantumlJavaPath
+      })
+      if ('error' in result) throw new Error(result.error)
+      return result.svg
+    },
     spellcheckEnabled: spellcheckerEnabled.value,
     spellcheckHideMarks: spellcheckerNoUnderline.value,
     // Resolve the OS clipboard to a local file path on paste (image-from-file).

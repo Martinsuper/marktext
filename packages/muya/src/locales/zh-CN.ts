@@ -96,5 +96,11 @@ export const zhCN = {
         'Input Front Matter...': '输入页眉...',
         'Invalid Mathematical Formula': '数学公式错误',
         'Empty Mathematical Formula': '空数学公式',
+        // diagram zoom
+        'Zoom diagram': '放大图表',
+        'Zoom in': '放大',
+        'Zoom out': '缩小',
+        'Reset zoom': '重置缩放',
+        'Close': '关闭',
     },
 };

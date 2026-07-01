@@ -70,6 +70,12 @@ export interface IpcInvokeChannels {
   'mt::keybinding-save-user-keybindings': { args: [bindings: unknown]; ret: boolean }
   'mt::paths::is-image': { args: [path: string]; ret: boolean }
   'mt::rg::start': { args: [req: unknown]; ret: { searchId: string } }
+  'mt::plantuml::render-local': {
+    args: [req: { code: string; jarPath: string; javaPath: string }]
+    ret: { svg: string } | { error: string }
+  }
+  'mt::plantuml::select-jar': { args: []; ret: string }
+  'mt::plantuml::select-java': { args: []; ret: string }
   'mt::shell::open-external': { args: [url: string]; ret: void }
   'mt::shell::open-path': { args: [fullPath: string]; ret: string }
   'mt::spellchecker-get-available-dictionaries': { args: []; ret: string[] }
