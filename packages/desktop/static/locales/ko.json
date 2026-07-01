@@ -208,7 +208,9 @@
       "rename": "이름 바꾸기",
       "copyPath": "경로 복사",
       "showInFolder": "폴더에서 보기"
-    }
+    },
+    "copyImage": "Copy Image",
+    "copyCode": "Copy Code"
   },
   "search": {
     "searchPlaceholder": "검색",

@@ -208,7 +208,9 @@
       "rename": "重新命名",
       "copyPath": "複製路徑",
       "showInFolder": "在資料夾中顯示"
-    }
+    },
+    "copyImage": "複製圖片",
+    "copyCode": "複製程式碼"
   },
   "search": {
     "searchPlaceholder": "搜尋",
