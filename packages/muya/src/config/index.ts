@@ -327,7 +327,9 @@ export const MUYA_DEFAULT_OPTIONS = {
     frontmatterType: '-',
     mermaidTheme: 'default', // dark / forest / default
     vegaTheme: 'latimes', // excel / ggplot2 / quartz / vox / fivethirtyeight / dark / latimes
+    plantumlRenderer: 'remote' as 'remote' | 'local',
     plantumlServer: 'https://www.plantuml.com/plantuml',
+    plantumlLocalRender: undefined as ((code: string) => Promise<string>) | undefined,
     sequenceTheme: 'hand' as 'hand' | 'simple', // hand / simple
     hideQuickInsertHint: false,
     hideLinkPopup: false,

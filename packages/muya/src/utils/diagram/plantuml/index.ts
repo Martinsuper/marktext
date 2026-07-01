@@ -1,4 +1,6 @@
 import plantumlEncoder from 'plantuml-encoder';
+import sanitize from '../../dompurify';
+import { PREVIEW_DOMPURIFY_CONFIG } from '../../../config';
 
 const PLANTUML_DEFAULT_URL = 'https://www.plantuml.com/plantuml';
 
@@ -16,6 +18,15 @@ export default class Diagram {
             diagram.plantumlServer = plantumlServer;
 
         return diagram;
+    }
+
+    static async renderLocal(
+        code: string,
+        container: HTMLElement,
+        localRender: (code: string) => Promise<string>,
+    ) {
+        const svg = await localRender(code);
+        container.innerHTML = sanitize(svg, PREVIEW_DOMPURIFY_CONFIG) as string;
     }
 
     /**

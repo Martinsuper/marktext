@@ -165,6 +165,12 @@ declare global {
     list(): Promise<string[]>
   }
 
+  interface PlantumlAPI {
+    renderLocal(req: { code: string; jarPath: string; javaPath: string }): Promise<{ svg: string } | { error: string }>
+    selectJar(): Promise<string>
+    selectJava(): Promise<string>
+  }
+
   interface ProcessShim {
     platform: NodeJS.Platform
     arch?: string
@@ -184,6 +190,7 @@ declare global {
     ripgrep: RipgrepAPI
     uploader: UploaderAPI
     fonts: FontsAPI
+    plantuml: PlantumlAPI
     process: ProcessShim
     rgPath: string
     // Set by the legacy editor store at runtime; consumed by muya internals.

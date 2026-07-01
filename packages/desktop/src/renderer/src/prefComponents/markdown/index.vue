@@ -100,11 +100,34 @@
           :on-change="(value) => onSelectChange('sequenceTheme', value)"
           more="https://bramp.github.io/js-sequence-diagrams/"
         />
+        <cur-select
+          :description="t('preferences.markdown.diagrams.plantumlRenderer.title')"
+          :value="plantumlRenderer"
+          :options="getPlantumlRendererOptions()"
+          :on-change="(value) => onSelectChange('plantumlRenderer', value)"
+        />
         <text-box
+          v-if="plantumlRenderer === 'remote'"
           :description="t('preferences.markdown.diagrams.plantumlServer.title')"
           :input="plantumlServer"
           :on-change="(value) => onSelectChange('plantumlServer', value)"
           :default-value="'https://www.plantuml.com/plantuml'"
+        />
+        <file-picker
+          v-if="plantumlRenderer === 'local'"
+          :description="t('preferences.markdown.diagrams.plantumlJarPath.title')"
+          :input="plantumlJarPath"
+          :on-change="(value) => onSelectChange('plantumlJarPath', value)"
+          :on-browse="() => window.plantuml.selectJar()"
+          :placeholder="t('preferences.markdown.diagrams.plantumlJarPath.placeholder')"
+        />
+        <file-picker
+          v-if="plantumlRenderer === 'local'"
+          :description="t('preferences.markdown.diagrams.plantumlJavaPath.title')"
+          :input="plantumlJavaPath"
+          :on-change="(value) => onSelectChange('plantumlJavaPath', value)"
+          :on-browse="() => window.plantuml.selectJava()"
+          :placeholder="'java'"
         />
       </template>
     </compound>
@@ -136,13 +159,15 @@ import type { PreferencesState } from '@/store/preferences'
 import Bool from '../common/bool/index.vue'
 import CurSelect from '../common/select/index.vue'
 import TextBox from '../common/textBox/index.vue'
+import FilePicker from '../common/filePicker/index.vue'
 import {
   bulletListMarkerOptions,
   orderListDelimiterOptions,
   getPreferHeadingStyleOptions,
   getListIndentationOptions,
   getFrontmatterTypeOptions,
-  getSequenceThemeOptions
+  getSequenceThemeOptions,
+  getPlantumlRendererOptions
 } from './config'
 import { storeToRefs } from 'pinia'
 
@@ -162,7 +187,10 @@ const {
   isHtmlEnabled,
   isGitlabCompatibilityEnabled,
   sequenceTheme,
-  plantumlServer
+  plantumlRenderer,
+  plantumlServer,
+  plantumlJarPath,
+  plantumlJavaPath
 } = storeToRefs(preferenceStore)
 
 const onSelectChange = (type: keyof PreferencesState, value: unknown): void => {

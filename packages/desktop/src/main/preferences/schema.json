@@ -282,11 +282,27 @@
     "enum": ["hand", "simple"],
     "default": "hand"
   },
+  "plantumlRenderer": {
+    "description": "Markdown--PlantUML rendering mode",
+    "type": "string",
+    "enum": ["remote", "local"],
+    "default": "remote"
+  },
   "plantumlServer": {
     "description": "Markdown--PlantUML server URL for rendering diagrams",
     "type": "string",
     "pattern": "^(https?://|$)",
     "default": "https://www.plantuml.com/plantuml"
+  },
+  "plantumlJarPath": {
+    "description": "Markdown--Path to local plantuml.jar file--internal",
+    "type": "string",
+    "default": ""
+  },
+  "plantumlJavaPath": {
+    "description": "Markdown--Path to Java executable--internal",
+    "type": "string",
+    "default": "java"
   },
   "theme": {
     "description": "Theme--Select the theme used in MarkText",
