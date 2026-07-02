@@ -163,12 +163,13 @@ jobs:
           name: marktext-${{ matrix.name }}
           retention-days: 14
           if-no-files-found: error
+          # Installers only. electron-builder also emits auto-update metadata
+          # (latest*.yml, *.blockmap) and redundant *.zip mirrors of the
+          # dmg/exe — deliberately excluded so the Release page carries just
+          # the downloadable installers.
           path: |
             dist/*.exe
-            dist/*.zip
             dist/*.dmg
-            dist/*.blockmap
-            dist/*.yml
             dist/*.AppImage
             dist/*.snap
             dist/*.deb
@@ -201,16 +202,6 @@ jobs:
           path: dist
           merge-multiple: true
 
-      - name: Generate SHA256SUMS.txt
-        working-directory: dist
-        run: |
-          # Deterministic ordering so identical inputs always produce identical output
-          find . -maxdepth 1 -type f ! -name 'SHA256SUMS.txt' -printf '%f\n' \
-            | LC_ALL=C sort \
-            | xargs -I{} sha256sum "{}" > SHA256SUMS.txt
-          echo "---"
-          cat SHA256SUMS.txt
-
       - name: Compose release notes body
         env:
           IS_PRERELEASE: ${{ contains(env.RELEASE_NAME, '-') }}
@@ -225,12 +216,6 @@ jobs:
             echo "Builds are unsigned (no Apple Developer ID). After dragging MarkText into Applications, clear the quarantine flag once:"
             echo '```'
             echo 'xattr -cr /Applications/marktext.app'
-            echo '```'
-            echo ""
-            echo "## Verifying downloads"
-            echo "All artifacts are listed with their SHA-256 in \`SHA256SUMS.txt\`. Verify with:"
-            echo '```'
-            echo 'sha256sum -c SHA256SUMS.txt --ignore-missing'
             echo '```'
           } > release_body.md
 
@@ -253,7 +238,17 @@ jobs:
           generate_release_notes: true
           body_path: release_body.md
           fail_on_unmatched_files: true
-          files: dist/*
+          # Installers only — the build job already excludes auto-update
+          # metadata and zip mirrors from its artifacts, so this glob is the
+          # second guard that keeps the Release page to just the installers.
+          files: |
+            dist/*.exe
+            dist/*.dmg
+            dist/*.AppImage
+            dist/*.snap
+            dist/*.deb
+            dist/*.rpm
+            dist/*.tar.gz
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
