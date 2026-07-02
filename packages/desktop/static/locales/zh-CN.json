@@ -208,7 +208,9 @@
       "rename": "重命名",
       "copyPath": "复制路径",
       "showInFolder": "在文件夹中显示"
-    }
+    },
+    "copyImage": "复制图片",
+    "copyCode": "复制代码"
   },
   "search": {
     "searchPlaceholder": "搜索",

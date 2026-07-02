@@ -208,7 +208,9 @@
       "rename": "Rename",
       "copyPath": "Copy path",
       "showInFolder": "Show in folder"
-    }
+    },
+    "copyImage": "Copy Image",
+    "copyCode": "Copy Code"
   },
   "search": {
     "searchPlaceholder": "Search",

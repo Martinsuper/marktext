@@ -208,7 +208,9 @@
       "rename": "名前を変更",
       "copyPath": "パスをコピー",
       "showInFolder": "フォルダで表示"
-    }
+    },
+    "copyImage": "Copy Image",
+    "copyCode": "Copy Code"
   },
   "search": {
     "searchPlaceholder": "検索",

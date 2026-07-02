@@ -208,7 +208,9 @@
       "rename": "Renomear",
       "copyPath": "Copiar caminho",
       "showInFolder": "Mostrar na pasta"
-    }
+    },
+    "copyImage": "Copy Image",
+    "copyCode": "Copy Code"
   },
   "search": {
     "searchPlaceholder": "Pesquisar",

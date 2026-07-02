@@ -208,7 +208,9 @@
       "rename": "Renombrar",
       "copyPath": "Copiar ruta",
       "showInFolder": "Mostrar en carpeta"
-    }
+    },
+    "copyImage": "Copy Image",
+    "copyCode": "Copy Code"
   },
   "search": {
     "searchPlaceholder": "Buscar",
