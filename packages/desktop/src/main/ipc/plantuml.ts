@@ -28,7 +28,7 @@ function spawnRender(req: RenderRequest): Promise<{ svg: string } | { error: str
     }
 
     running++
-    const child = spawn(javaPath || 'java', ['-jar', jarPath, '-tsvg', '-charset', 'UTF-8', '-pipe'], {
+    const child = spawn(javaPath || 'java', ['-Djava.awt.headless=true', '-jar', jarPath, '-tsvg', '-charset', 'UTF-8', '-pipe'], {
       stdio: ['pipe', 'pipe', 'pipe'],
       timeout: 30000
     })

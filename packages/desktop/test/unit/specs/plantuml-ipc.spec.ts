@@ -115,7 +115,7 @@ describe('plantuml IPC — registerPlantumlHandlers', () => {
 
     expect(mockSpawn).toHaveBeenCalledWith(
       '/usr/bin/java',
-      ['-jar', '/usr/local/lib/plantuml.jar', '-tsvg', '-charset', 'UTF-8', '-pipe'],
+      ['-Djava.awt.headless=true', '-jar', '/usr/local/lib/plantuml.jar', '-tsvg', '-charset', 'UTF-8', '-pipe'],
       expect.objectContaining({ stdio: ['pipe', 'pipe', 'pipe'], timeout: 30000 })
     )
     expect(result).toEqual({ svg: '<svg>test</svg>' })
