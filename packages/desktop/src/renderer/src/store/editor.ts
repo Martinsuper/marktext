@@ -1658,7 +1658,13 @@ export const useEditorStore = defineStore('editor', {
             }
             case 'add':
             case 'change': {
-              const { autoSave } = preferencesStore
+              const { autoSave, autoReloadOnExternalChange } = preferencesStore
+
+              if (autoReloadOnExternalChange) {
+                this.loadChange(change as unknown as FileChangePayload)
+                return
+              }
+
               if (autoSave) {
                 if (autoSaveTimers.has(id)) {
                   const timer = autoSaveTimers.get(id)

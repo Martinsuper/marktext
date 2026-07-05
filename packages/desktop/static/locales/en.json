@@ -366,6 +366,7 @@
       "items": {
         "autoSave": "Automatically save the content being edited",
         "autoSaveDelay": "The time in ms after a change that the file is saved",
+        "autoReloadOnExternalChange": "Automatically reload the file when changed externally",
         "titleBarStyle": "The title bar style (Windows and Linux system only)",
         "openFilesInNewWindow": "Open files in a new window",
         "openFolderInNewWindow": "Open folder via menu in a new window",
@@ -444,6 +445,10 @@
         "title": "Auto Save",
         "description": "Auto save",
         "delayDescription": "Auto save delay"
+      },
+      "autoReloadOnExternalChange": {
+        "title": "Auto Reload on External Change",
+        "description": "Automatically reload the file when it is changed outside MarkText"
       },
       "window": {
         "title": "Window",

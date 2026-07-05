@@ -67,6 +67,7 @@ export interface IUserPreferences {
   lastOpenedFolder?: string
   autoNormalizeLineEndings?: boolean
   watcherUsePolling?: boolean
+  autoReloadOnExternalChange?: boolean
   treePathExcludePatterns?: string[]
   [key: string]: unknown
 }

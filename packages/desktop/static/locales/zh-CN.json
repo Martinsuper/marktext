@@ -366,6 +366,7 @@
       "items": {
         "autoSave": "自动保存正在编辑的内容",
         "autoSaveDelay": "文件保存前的延迟时间（毫秒）",
+        "autoReloadOnExternalChange": "文件被外部修改时自动刷新",
         "autoNormalizeLineEndings": "打开文件时自动规范化行尾。禁用时按原样打开文件",
         "titleBarStyle": "标题栏样式（仅限 Windows 和 Linux 系统）",
         "openFilesInNewWindow": "在新窗口中打开文件",
@@ -444,6 +445,10 @@
         "title": "自动保存",
         "description": "自动保存",
         "delayDescription": "自动保存延迟"
+      },
+      "autoReloadOnExternalChange": {
+        "title": "外部修改时自动刷新",
+        "description": "当文件在外部被修改时自动刷新内容"
       },
       "window": {
         "title": "窗口",
