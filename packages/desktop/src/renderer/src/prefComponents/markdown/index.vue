@@ -118,7 +118,7 @@
           :description="t('preferences.markdown.diagrams.plantumlJarPath.title')"
           :input="plantumlJarPath"
           :on-change="(value) => onSelectChange('plantumlJarPath', value)"
-          :on-browse="() => window.plantuml.selectJar()"
+          :on-browse="() => plantuml.selectJar()"
           :placeholder="t('preferences.markdown.diagrams.plantumlJarPath.placeholder')"
         />
         <file-picker
@@ -126,7 +126,7 @@
           :description="t('preferences.markdown.diagrams.plantumlJavaPath.title')"
           :input="plantumlJavaPath"
           :on-change="(value) => onSelectChange('plantumlJavaPath', value)"
-          :on-browse="() => window.plantuml.selectJava()"
+          :on-browse="() => plantuml.selectJava()"
           :placeholder="'java'"
         />
       </template>
@@ -172,6 +172,8 @@ import {
 import { storeToRefs } from 'pinia'
 
 const { t } = useI18n()
+
+const plantuml = window.plantuml
 
 const preferenceStore = usePreferencesStore()
 

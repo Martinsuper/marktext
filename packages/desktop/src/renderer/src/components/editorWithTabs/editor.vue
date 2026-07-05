@@ -1736,6 +1736,7 @@ onMounted(() => {
     sequenceTheme: sequenceTheme.value,
     plantumlRenderer: preferencesStore.plantumlRenderer,
     plantumlServer: preferencesStore.plantumlServer,
+    disableDiagramContextMenu: true,
     plantumlLocalRender: async (code: string) => {
       const result = await window.plantuml.renderLocal({
         code,

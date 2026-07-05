@@ -220,8 +220,15 @@ class DiagramPreview extends Parent {
     // Right-click any rendered diagram (img for plantuml, svg for the rest) to
     // copy its raw fenced source — `this._code` is the source for every type.
     contextMenuHandler(event: Event) {
-        event.preventDefault();
         event.stopPropagation();
+
+        // In Electron, the host handles the context menu natively via
+        // webContents 'context-menu'. Suppressing preventDefault lets Chromium
+        // forward the event to the main process.
+        if (this.muya.options.disableDiagramContextMenu)
+            return;
+
+        event.preventDefault();
 
         if (!this._code)
             return;

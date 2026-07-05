@@ -330,6 +330,7 @@ export const MUYA_DEFAULT_OPTIONS = {
     plantumlRenderer: 'remote' as 'remote' | 'local',
     plantumlServer: 'https://www.plantuml.com/plantuml',
     plantumlLocalRender: undefined as ((code: string) => Promise<string>) | undefined,
+    disableDiagramContextMenu: false,
     sequenceTheme: 'hand' as 'hand' | 'simple', // hand / simple
     hideQuickInsertHint: false,
     hideLinkPopup: false,

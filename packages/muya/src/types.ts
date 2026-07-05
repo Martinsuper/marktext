@@ -25,6 +25,7 @@ export interface IMuyaOptions {
     plantumlRenderer: 'remote' | 'local';
     plantumlServer: string;
     plantumlLocalRender?: (code: string) => Promise<string>;
+    disableDiagramContextMenu?: boolean;
     sequenceTheme: 'hand' | 'simple';
     hideQuickInsertHint: boolean;
     hideLinkPopup: boolean;

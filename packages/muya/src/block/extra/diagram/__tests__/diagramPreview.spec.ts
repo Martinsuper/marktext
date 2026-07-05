@@ -298,4 +298,22 @@ describe('diagramPreview — contextMenuHandler (copy source code)', () => {
         expect(event.preventDefault).toHaveBeenCalledTimes(1);
         expect(openDiagramContextMenuMock).not.toHaveBeenCalled();
     });
+
+    it('skips preventDefault and openDiagramContextMenu when disableDiagramContextMenu is true', () => {
+        const { preview, muya } = makePreview('@startuml\nA->B\n@enduml', 'plantuml');
+        (muya.options as { disableDiagramContextMenu?: boolean }).disableDiagramContextMenu = true;
+
+        const event = {
+            preventDefault: vi.fn(),
+            stopPropagation: vi.fn(),
+            clientX: 10,
+            clientY: 20,
+        } as unknown as Event;
+
+        preview.contextMenuHandler(event);
+
+        expect(event.stopPropagation).toHaveBeenCalledTimes(1);
+        expect(event.preventDefault).not.toHaveBeenCalled();
+        expect(openDiagramContextMenuMock).not.toHaveBeenCalled();
+    });
 });

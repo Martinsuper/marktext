@@ -64,14 +64,18 @@ const handleInput = (value: string) => {
 }
 
 const handleBrowse = async () => {
-  const selected = await props.onBrowse()
-  if (selected) {
-    if (inputTimer) {
-      clearTimeout(inputTimer)
-      inputTimer = null
+  try {
+    const selected = await props.onBrowse()
+    if (selected) {
+      if (inputTimer) {
+        clearTimeout(inputTimer)
+        inputTimer = null
+      }
+      inputText.value = selected
+      props.onChange(selected)
     }
-    inputText.value = selected
-    props.onChange(selected)
+  } catch (err) {
+    console.error('[FilePicker] browse failed:', err)
   }
 }
 </script>
