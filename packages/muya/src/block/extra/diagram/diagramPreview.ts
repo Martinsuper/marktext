@@ -13,18 +13,60 @@ import { openDiagramZoom } from './zoom';
 
 const debug = logger('diagramPreview:');
 
+// Module-level render cache: avoids re-rendering unchanged diagrams when the
+// block tree is rebuilt (e.g. forceRender, undo/redo). Keyed by `type:code`.
+const _renderCache = new Map<string, string>();
+const RENDER_CACHE_MAX = 50;
+
+function cacheKey(type: string, code: string): string {
+    return `${type}:${code}`;
+}
+
+function getCachedHtml(type: string, code: string): string | undefined {
+    return _renderCache.get(cacheKey(type, code));
+}
+
+function setCachedHtml(type: string, code: string, html: string): void {
+    const key = cacheKey(type, code);
+    if (_renderCache.size >= RENDER_CACHE_MAX) {
+        const first = _renderCache.keys().next().value!;
+        _renderCache.delete(first);
+    }
+    _renderCache.set(key, html);
+}
+
 // A magnifier shown on the rendered PlantUML image; clicking it opens the
 // fullscreen zoom lightbox.
 const ZOOM_TRIGGER_ICON
     = '<svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"><circle cx="6.5" cy="6.5" r="4.5"/><path d="M10 10 14 14M6.5 4.5v4M4.5 6.5h4"/></svg>';
 
-// PlantUML uniquely renders as an `<img>` of a server-side SVG that CSS caps at
-// the editor column width, so dense diagrams become unreadable. Append a zoom
-// trigger that opens a pannable/zoomable fullscreen view of that same image.
+// Diagrams rendered at `max-width: 100%` can become unreadable when dense.
+// Append a zoom trigger that opens a pannable/zoomable fullscreen lightbox.
 function attachZoomButton(target: HTMLElement, i18n: I18n): void {
     const img = target.querySelector('img');
-    if (!img)
+    const svg = target.querySelector('svg');
+    if (!img && !svg)
         return;
+
+    const getSrc = (): string => {
+        if (img)
+            return img.src;
+        // Clone the SVG so we can set explicit width/height for the <img> to
+        // report correct naturalWidth/naturalHeight in the lightbox.
+        const clone = svg!.cloneNode(true) as SVGSVGElement;
+        const vb = clone.viewBox.baseVal;
+        if (vb && vb.width > 0 && vb.height > 0) {
+            clone.setAttribute('width', String(vb.width));
+            clone.setAttribute('height', String(vb.height));
+        }
+        else if (!clone.hasAttribute('width') || !clone.hasAttribute('height')) {
+            const rect = svg!.getBoundingClientRect();
+            clone.setAttribute('width', String(rect.width));
+            clone.setAttribute('height', String(rect.height));
+        }
+        const serialized = new XMLSerializer().serializeToString(clone);
+        return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(serialized)}`;
+    };
 
     const button = document.createElement('button');
     button.type = 'button';
@@ -39,7 +81,7 @@ function attachZoomButton(target: HTMLElement, i18n: I18n): void {
     button.addEventListener('click', (event) => {
         event.preventDefault();
         event.stopPropagation();
-        openDiagramZoom(img.src, {
+        openDiagramZoom(getSrc(), {
             zoomIn: i18n.t('Zoom in'),
             zoomOut: i18n.t('Zoom out'),
             reset: i18n.t('Reset zoom'),
@@ -86,6 +128,29 @@ function ensureViewBox(target: HTMLElement): void {
     setTimeout(() => observer.disconnect(), 5000);
 }
 
+// PlantUML's SVG output typically uses `preserveAspectRatio="none"` which
+// causes the image to stretch when the container constrains the width via
+// `max-width: 100%`. Fix: ensure a viewBox exists and override the attribute
+// to `xMidYMid meet` so the diagram scales uniformly.
+function fixPlantUmlSvg(target: HTMLElement): void {
+    const svg = target.querySelector('svg');
+    if (!svg)
+        return;
+
+    const width = Number.parseFloat(svg.getAttribute('width') ?? '');
+    const height = Number.parseFloat(svg.getAttribute('height') ?? '');
+
+    if (!svg.getAttribute('viewBox') && width > 0 && height > 0)
+        svg.setAttribute('viewBox', `0 0 ${width} ${height}`);
+
+    svg.removeAttribute('width');
+    svg.removeAttribute('height');
+    svg.style.width = '';
+    svg.style.height = '';
+    svg.style.maxWidth = '100%';
+    svg.setAttribute('preserveAspectRatio', 'xMidYMid meet');
+}
+
 interface IRenderOptions {
     type: string;
     code: string;
@@ -127,6 +192,7 @@ async function renderDiagram({
     if (type === 'plantuml') {
         if (plantumlRenderer === 'local' && plantumlLocalRender) {
             await render.renderLocal(code, target, plantumlLocalRender);
+            fixPlantUmlSvg(target);
         }
         else {
             const diagram = render.parse(code, plantumlServer);
@@ -165,6 +231,7 @@ async function renderDiagram({
 class DiagramPreview extends Parent {
     private _code: string;
     private _type: string;
+    private _rendered = false;
     static override blockName = 'diagram-preview';
 
     static create(muya: Muya, state: IDiagramState) {
@@ -200,7 +267,13 @@ class DiagramPreview extends Parent {
 
     private _attachDOMEvents() {
         const clickObservable = fromEvent(this.domNode!, 'click');
-        clickObservable.subscribe(this.clickHandler.bind(this));
+        clickObservable.subscribe((event: Event) => {
+            event.preventDefault();
+            event.stopPropagation();
+        });
+
+        const dblClickObservable = fromEvent(this.domNode!, 'dblclick');
+        dblClickObservable.subscribe(this.clickHandler.bind(this));
 
         const contextMenuObservable = fromEvent(this.domNode!, 'contextmenu');
         contextMenuObservable.subscribe(this.contextMenuHandler.bind(this));
@@ -247,13 +320,27 @@ class DiagramPreview extends Parent {
 
     async update(code = this._code) {
         const { i18n } = this.muya;
-        if (this._code !== code)
-            this._code = code;
+
+        if (code === this._code && this._rendered) {
+            return;
+        }
+
+        this._code = code;
+        this._rendered = false;
 
         if (code) {
-            this.domNode!.innerHTML = i18n.t('Loading...');
             const { mermaidTheme, vegaTheme, plantumlRenderer, plantumlServer, plantumlLocalRender, sequenceTheme } = this.muya.options;
             const { _type: type } = this;
+
+            const cached = getCachedHtml(type, code);
+            if (cached) {
+                this.domNode!.innerHTML = cached;
+                attachZoomButton(this.domNode!, i18n);
+                this._rendered = true;
+                return;
+            }
+
+            this.domNode!.innerHTML = i18n.t('Loading...');
 
             try {
                 await renderDiagram({
@@ -267,8 +354,9 @@ class DiagramPreview extends Parent {
                     plantumlLocalRender,
                     sequenceTheme,
                 });
-                if (type === 'plantuml')
-                    attachZoomButton(this.domNode!, i18n);
+                setCachedHtml(type, code, this.domNode!.innerHTML);
+                attachZoomButton(this.domNode!, i18n);
+                this._rendered = true;
             }
             catch (error) {
                 const detail

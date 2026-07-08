@@ -726,6 +726,7 @@ figure.mu-math-block .mu-math-preview .katex-display {
 /* to prevent plantuml img overflow */
 figure.mu-diagram-block .mu-diagram-preview img {
     max-width: 100%;
+    height: auto;
 }
 
 /* PlantUML zoom trigger — a magnifier shown on hover over the rendered image,
