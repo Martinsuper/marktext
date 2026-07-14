@@ -7,7 +7,7 @@ import { setLanguage } from '../i18n'
 // narrow casts on consumers that read raw values from disk.
 export type EndOfLine = 'default' | 'lf' | 'crlf'
 export type TitleBarStyle = 'custom' | 'native'
-export type StartUpAction = 'restoreAll' | 'lastSession' | 'blank'
+export type StartUpAction = 'restoreAll' | 'restoreLast' | 'lastSession' | 'blank'
 export type TextDirection = 'ltr' | 'rtl'
 export type BulletListMarker = '*' | '+' | '-'
 export type OrderListDelimiter = '.' | ')'
@@ -145,7 +145,7 @@ export const usePreferencesStore = defineStore('preferences', {
   state: (): PreferencesState => ({
     autoSave: false,
     autoSaveDelay: 5000,
-    autoReloadOnExternalChange: false,
+    autoReloadOnExternalChange: true,
     titleBarStyle: 'custom',
     openFilesInNewWindow: false,
     openFolderInNewWindow: false,
@@ -154,7 +154,7 @@ export const usePreferencesStore = defineStore('preferences', {
     wordWrapInToc: false,
     fileSortBy: 'created',
     fileSortOrder: 'asc',
-    startUpAction: 'restoreAll',
+    startUpAction: 'restoreLast',
     restoreLayoutState: true,
     defaultDirectoryToOpen: '',
     lastOpenedFolder: '',

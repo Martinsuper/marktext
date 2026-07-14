@@ -253,11 +253,12 @@ class App {
     }
 
     // We should NOT restore the previous buffer or open a folder if the user just wants to double click to open a file
-    let isRestorePathway = false
+    let restoreMode: 'none' | 'all' | 'last' = 'none'
     if (_openFilesCache.length === 0) {
-      if (startUpAction === 'restoreAll') {
-        // Restore based off the previous buffer
-        isRestorePathway = true
+      if (startUpAction === 'restoreLast') {
+        restoreMode = 'last'
+      } else if (startUpAction === 'restoreAll') {
+        restoreMode = 'all'
       } else if (startUpAction === 'folder' && defaultDirectoryToOpen) {
         const info = normalizeMarkdownPath(defaultDirectoryToOpen)
         if (info) {
@@ -384,8 +385,7 @@ class App {
     }
 
     const createWindow = (): void => {
-      if (isRestorePathway) {
-        // We will restore based off the previous buffer, one window per buffer store file
+      if (restoreMode === 'all') {
         const bufferStores = editorBufferStore.getAll()
         const bufferStoreList = Object.values(bufferStores) as Array<{
           id: string
@@ -397,9 +397,16 @@ class App {
         }
 
         bufferStoreList.forEach((bufferStoreInfo) => {
-          // Read the buffer store file and pass the content
           this._createEditorWindow(null, [], [], {}, bufferStoreInfo)
         })
+      } else if (restoreMode === 'last') {
+        const mostRecent = editorBufferStore.getMostRecentBufferStore()
+        if (!mostRecent) {
+          this._createEditorWindow()
+          return
+        }
+
+        this._createEditorWindow(null, [], [], {}, mostRecent)
       } else if (_openFilesCache.length) {
         // We should wipe the buffer store if not it will keep creating new windows whenever we open files via double click in the file manager
         editorBufferStore.clearBufferStoresWithAllSaved()

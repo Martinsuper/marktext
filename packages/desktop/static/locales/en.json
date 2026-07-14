@@ -210,7 +210,12 @@
       "showInFolder": "Show in folder"
     },
     "copyImage": "Copy Image",
-    "copyCode": "Copy Code"
+    "copyCode": "Copy Code",
+    "toc": {
+      "copySectionContent": "Copy Section Content",
+      "copySuccess": "Section content copied to clipboard.",
+      "copyEmpty": "Could not extract section content."
+    }
   },
   "search": {
     "searchPlaceholder": "Search",
@@ -472,6 +477,7 @@
         "openDefaultDirectory": "Open default directory",
         "openLastFolder": "Restore opened folder",
         "restoreAll": "Restore all opened files and folders",
+        "restoreLast": "Restore last closed window",
         "selectFolder": "Select Folder",
         "openBlankPage": "Open blank page"
       },

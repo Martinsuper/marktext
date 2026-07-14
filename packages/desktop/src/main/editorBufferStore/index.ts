@@ -57,6 +57,29 @@ class EditorBufferStore extends TypedEmitter<EditorBufferStoreEvents> {
     this._listenForIpcMain()
   }
 
+  getMostRecentBufferStore(): BufferStoreEntry | null {
+    const stores = this.getAllBufferStores()
+    const entries = Object.values(stores)
+    if (entries.length === 0) return null
+
+    let mostRecent: BufferStoreEntry | null = null
+    let latestMtime = -1
+
+    for (const entry of entries) {
+      try {
+        const stat = fs.statSync(entry.filePath)
+        if (stat.mtimeMs > latestMtime) {
+          latestMtime = stat.mtimeMs
+          mostRecent = entry
+        }
+      } catch {
+        // Skip files that can't be stat'd
+      }
+    }
+
+    return mostRecent
+  }
+
   getAll(): Record<string, BufferStoreEntry> {
     return this.getAllBufferStores()
   }

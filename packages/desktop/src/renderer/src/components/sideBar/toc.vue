@@ -15,6 +15,7 @@
       :indent="10"
       :icon="ArrowRight"
       @node-click="handleClick"
+      @node-contextmenu="handleContextMenu"
     />
   </div>
 </template>
@@ -26,6 +27,8 @@ import bus from '../../bus'
 import { storeToRefs } from 'pinia'
 import { useI18n } from 'vue-i18n'
 import { ArrowRight } from '@element-plus/icons-vue'
+import { popupContextMenu } from '../../contextMenu/popupMenu'
+import notice from '../../services/notification'
 
 const { t } = useI18n()
 
@@ -41,11 +44,75 @@ const { toc } = storeToRefs(editorStore)
 const { wordWrapInToc } = storeToRefs(preferencesStore)
 
 const handleClick = (data: { slug?: unknown }): void => {
-  // editor.vue builds a CSS selector with `#${slug}` — bail out if the
-  // node has no slug (e.g. unsluggable headings) to avoid emitting
-  // `undefined` / non-string payloads and producing `#undefined` selectors.
   if (typeof data.slug !== 'string' || data.slug.length === 0) return
   bus.emit('scroll-to-header', data.slug)
+}
+
+const extractSectionMarkdown = (targetLvl: number, targetLabel: string): string | null => {
+  const markdown = editorStore.currentFile?.markdown
+  if (!markdown) return null
+
+  const lines = markdown.split('\n')
+  const headingRegex = /^(#{1,6})\s+(.*)$/
+
+  let startLine = -1
+  let endLine = lines.length
+
+  for (let i = 0; i < lines.length; i++) {
+    const match = lines[i].match(headingRegex)
+    if (!match) continue
+    const lvl = match[1].length
+    const rawText = match[2].trim()
+    const stripped = rawText.replace(/[*_`~[\]()#]/g, '').trim()
+
+    if (startLine === -1) {
+      if (lvl === targetLvl && (rawText === targetLabel || stripped === targetLabel || rawText.includes(targetLabel))) {
+        startLine = i
+      }
+    } else {
+      if (lvl <= targetLvl) {
+        endLine = i
+        break
+      }
+    }
+  }
+
+  if (startLine === -1) return null
+  return lines.slice(startLine, endLine).join('\n').trimEnd()
+}
+
+const handleContextMenu = (event: MouseEvent, data: { lvl?: number | null; slug?: unknown; label?: unknown }): void => {
+  event.preventDefault()
+  if (data.lvl == null) return
+
+  const label = typeof data.label === 'string' ? data.label : ''
+  if (!label) return
+
+  const items = [
+    {
+      label: t('contextMenu.toc.copySectionContent'),
+      id: 'copySectionContentMenuItem',
+      click () {
+        const content = extractSectionMarkdown(data.lvl!, label)
+        if (content) {
+          window.electron.clipboard.writeText(content)
+          notice.notify({
+            title: t('contextMenu.toc.copySectionContent'),
+            type: 'primary',
+            message: t('contextMenu.toc.copySuccess')
+          })
+        } else {
+          notice.notify({
+            title: t('contextMenu.toc.copySectionContent'),
+            type: 'warning',
+            message: t('contextMenu.toc.copyEmpty')
+          })
+        }
+      }
+    }
+  ]
+
+  popupContextMenu(items, { x: event.clientX, y: event.clientY })
 }
 </script>
 

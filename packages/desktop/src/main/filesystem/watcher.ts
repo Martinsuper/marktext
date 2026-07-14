@@ -228,6 +228,8 @@ class Watcher {
 
       depth: type === 'file' ? (isOsx ? 1 : 0) : undefined,
 
+      atomic: type === 'file' ? WATCHER_STABILITY_THRESHOLD : false,
+
       // Please see GH#1043
       awaitWriteFinish: {
         stabilityThreshold: WATCHER_STABILITY_THRESHOLD,

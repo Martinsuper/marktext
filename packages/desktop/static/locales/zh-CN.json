@@ -210,7 +210,12 @@
       "showInFolder": "在文件夹中显示"
     },
     "copyImage": "复制图片",
-    "copyCode": "复制代码"
+    "copyCode": "复制代码",
+    "toc": {
+      "copySectionContent": "复制章节内容",
+      "copySuccess": "已复制章节内容到剪贴板。",
+      "copyEmpty": "无法提取章节内容。"
+    }
   },
   "search": {
     "searchPlaceholder": "搜索",
@@ -472,6 +477,7 @@
         "openDefaultDirectory": "打开默认目录",
         "openLastFolder": "恢复打开的文件夹",
         "restoreAll": "恢复所有已打开的文件和文件夹",
+        "restoreLast": "恢复最后关闭的窗口",
         "selectFolder": "选择文件夹",
         "openBlankPage": "打开空白页"
       },
